@@ -176,11 +176,13 @@ window.onload = () => {
 			resultsContainer.removeChild(resultsContainer.firstChild);
 		}
 		const table = document.createElement("table");
-		const thread = document.createElement("thread");
-		table.appendChild(thread);
+		const thead = document.createElement("thead");
+		const tbody = document.createElement("tbody");
+		table.appendChild(thead);
+		table.appendChild(tbody);
 		{
 			const tr = document.createElement("tr");
-			thread.appendChild(tr);
+			thead.appendChild(tr);
 			let counter = 0;
 			[
 				0, 0, 0, {label: "Tm /°C", colspan: 2}, 0, 
@@ -202,7 +204,7 @@ window.onload = () => {
 		}
 		{
 			const tr = document.createElement("tr");
-			thread.appendChild(tr);
+			thead.appendChild(tr);
 			[
 				"Sequence", "Length", "Abs.", "Nearest Neighbor", "Wallace", 
 				"ε<sub>260 nm</sub> /cm<sup>−1</sup>･M<sup>−1</sup>", "Conc. /μM", "Conc. /ng･μL<sup>−1</sup>", "Mw", 
@@ -217,7 +219,7 @@ window.onload = () => {
 
 		results.forEach(r => {
 			const tr = document.createElement("tr");
-			thread.appendChild(tr);
+			tbody.appendChild(tr);
 			Object.keys(r).forEach(key => {
 				const value = r[key];
 				const td = document.createElement("td");
