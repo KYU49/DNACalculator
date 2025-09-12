@@ -1,6 +1,7 @@
 window.onload = () => {
 	document.getElementById("calculateBtn").addEventListener("click", moveForCalc);
 	document.getElementById("downloadBtn").addEventListener("click", downloadTSV);
+	document.getElementById("clearBtn").addEventListener("click", clearInput);
 
 	let lastResults = [];
 
@@ -22,6 +23,12 @@ window.onload = () => {
 		const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, ""); 
 		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}`;
 		location.href = url;
+	}
+	function clearInput(){
+		if( window.confirm("Clear all your inputs?") ){
+			const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, "");
+			location.href = baseUrl;
+		}
 	}
 
 	function calculate() {
