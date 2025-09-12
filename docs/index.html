@@ -26,12 +26,50 @@
 	<ul>
 		<li>Input one sequence per row.</li>
 		<li>"Abs." is used only for concentration calculations.</li>
+		<li>The mw value is calculated with the 5' end as -OH. </li>
+		<li>The extinction coefficient of dsDNA is calculated by Nearest Neighbor method (<a href="http://www.atdbio.com/content/1/Ultraviolet-absorbance-of-oligonucleotides" target="_blank">Ref</a>).</li>
 	</ul>
 	<br>
 	<button id="calculateBtn">Calculate</button>
 	<button id="downloadBtn" disabled>Download TSV</button>
 
 	<div id="results"></div>
+
+	<hr>
+
+	<h2>Values used for calculation</h2>
+	<table class="auto-width-table">
+		<thead>
+			<tr>
+				<th></th><th>pdA</th><th>pdC</th><th>pdG</th><th>pdT</th><th>dApdA</th><th>dApdC</th><th>dApdG</th><th>dApdT</th><th>dCpdA</th><th>dCpdC</th><th>dCpdG</th><th>dCpdT</th><th>dGpdA</th><th>dGpdC</th><th>dGpdG</th><th>dGpdT</th><th>dTpdA</th><th>dTpdC</th><th>dTpdG</th><th>dTpdT</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>ε(ss)</td><td>15400</td><td>7400</td><td>11500</td><td>8700</td><td>27400</td><td>21200</td><td>25000</td><td>22800</td><td>21200</td><td>14600</td><td>18000</td><td>15200</td><td>25200</td><td>17600</td><td>21600</td><td>20000</td><td>23400</td><td>16200</td><td>19000</td><td>16800</td>
+			</tr>
+			<tr>
+				<td>ΔH /kcal･mol-1</td><td colspan="4"></td><td>-9.1</td><td>-6.5</td><td>-7.8</td><td>-8.6</td><td>-5.8</td><td>-11</td><td>-11.9</td><td>-7.8</td><td>-5.6</td><td>-11.1</td><td>-11</td><td>-6.5</td><td>-6</td><td>-5.6</td><td>-5.8</td><td>-9.1</td>
+			</tr>
+			<tr>
+				<td>ΔS /cal･mol-1K-1</td><td colspan="4"></td><td>-24</td><td>-17.3</td><td>-20.8</td><td>-23.9</td><td>-12.9</td><td>-26.6</td><td>-27.8</td><td>-20.8</td><td>-13.5</td><td>-26.7</td><td>-26.6</td><td>-17.3</td><td>-16.9</td><td>-13.5</td><td>-12.9</td><td>-24</td>
+			</tr>
+			</tbody>
+		</table>
+		<br>
+	<table class="auto-width-table">
+		<tbody>
+			<tr>
+				<td></td><td>A</td><td>C</td><td>G</td><td>T</td>
+			</tr>
+			<tr>
+				<td>Mw</td><td>313.21</td><td>289.18</td><td>329.21</td><td>304.2</td>
+			</tr>
+			<tr>
+				<td>Mw (ds)</td><td>617.41</td><td>618.39</td><td>618.39</td><td>617.41</td>
+			</tr>
+		</tbody>
+	</table>
 
 	<dialog class="modal-overlay" id="modalOverlay">
 		<div class="modal-box" id="modalBox"></div>
