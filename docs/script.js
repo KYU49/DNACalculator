@@ -27,8 +27,12 @@ window.onload = () => {
 		const params = new URLSearchParams(window.location.search);
 		seq = params.get("seq") || "";
 		abs = params.get("abs") || "";
+		na = params.get("na") || 50;
+		dna = params.get("dna") || 0.5;
 		document.getElementById("seq").value = seq;
 		document.getElementById("abs").value = abs;
+		document.getElementById("naInput").value = na;
+		document.getElementById("dnaInput").value = dna;
 		if (seq){
 			calculate();
 		}
@@ -37,9 +41,11 @@ window.onload = () => {
 	function moveForCalc(){
 		const seq = document.getElementById("seq").value.trim();
 		if (!seq) return;
-		const abs = document.getElementById("abs").value.trim();
+		const abs = document.getElementById("abs").value;
+		const na = document.getElementById("naInput").value;
+		const dna = document.getElementById("dnaInput").value;
 		const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, ""); 
-		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}`;
+		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&dna=${dna}`;
 		location.href = url;
 	}
 	function clearInput(){
@@ -52,12 +58,12 @@ window.onload = () => {
 	function calculate() {
 		const seqInput = document.getElementById("seq").value.trim();
 		const sequences = seqInput.split(/\r?\n/);
-		const absInput = document.getElementById("abs").value.trim();
+		const absInput = document.getElementById("abs").value;
 		const absorbances = absInput.split(/\r?\n/);
 
 		lastResults = sequences.map((seq, i) => analyzeSequence(seq, absorbances[i] ?? 0));
 
-		renderTable(lastResults);
+		renderTable();
 		document.getElementById("downloadBtn").disabled = false;
 	}
 
@@ -195,7 +201,8 @@ window.onload = () => {
 		};
 	}
 
-	function renderTable(results) {
+	function renderTable() {
+		const results = lastResults;
 		const resultsContainer = document.getElementById("results");
 		while(resultsContainer.firstChild){
 			resultsContainer.removeChild(resultsContainer.firstChild);
@@ -242,7 +249,7 @@ window.onload = () => {
 			});
 		}
 
-		results.forEach(r => {
+		results.forEach( (r, i) => {
 			const tr = document.createElement("tr");
 			tbody.appendChild(tr);
 			Object.keys(r).forEach(key => {
@@ -257,15 +264,21 @@ window.onload = () => {
 						input.value = value;
 						const rConst = r;
 						const trConst = tr;
+						const iConst = i;
 						input.addEventListener("input", e => {
 							const absText = e.target.value.replace(/[^\d\.]/g, "").replace(/(\.\d*)\./g, "$1");
 							let abs = parseFloat("0" + absText);
+							lastResults[iConst].abs = abs;
 							const conc = abs / rConst.epsilon * 1000000;
-							trConst.getElementsByClassName("conc_uM")[0].textContent = (conc).toFixed(2);
+							trConst.getElementsByClassName("conc_uM")[0].textContent = conc.toFixed(2);
+							lastResults[iConst].conc_uM = conc.toFixed(2);
 							trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(3);
+							lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(3);
 							const dsConc = abs / rConst.dsEpsilon * 1000000;
-							trConst.getElementsByClassName("dsConc_uM")[0].textContent = (dsConc).toFixed(2);
+							trConst.getElementsByClassName("dsConc_uM")[0].textContent = dsConc.toFixed(2);
+							lastResults[iConst].dsConc_uM = dsConc.toFixed(2);
 							trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(3);
+							lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(3);
 							e.target.value = absText;
 						});
 						input.classList.add("abs-input");
@@ -289,19 +302,20 @@ window.onload = () => {
 
 	function downloadTSV() {
 		if (!lastResults.length) return;
+		const na = document.getElementById("naInput").value;
+		const dna = document.getElementById("dnaInput").value;
 
 		let tsv = [
 				"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
 				"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
 				"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
-				"GC /%", "A", "T", "C", "G"
+				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[ssDNA] /μM"
 			].join("\t") + "\n";
 		lastResults.forEach(r => {
 			Object.keys(r).forEach(key => {
 				tsv += r[key] + "\t";
 			});
-			tsv.replace(/\t$/, "");
-			tsv += "\n";
+			tsv += na + "\t" + dna + "\n";
 		});
 
 		const blob = new Blob([tsv], { type: "text/tab-separated-values" });
