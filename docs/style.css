@@ -43,13 +43,16 @@ textarea {
 	line-height: 1.5em;		/* 行間を調整 */
 }
 
-.abs-input {
+.abs-textarea {
 	flex: 1;	/* 高さをラベル以外で揃える */
 	width: 10em;	/* absは狭め */
 }
 
 label {
 	margin-right: 15px;
+}
+.bold {
+	font-weight: bold;
 }
 
 button {
@@ -83,11 +86,35 @@ table {
 }
 
 th, td {
+	overflow-x: hidden!important;
+	text-overflow: ellipsis;
 	border: 1px solid #ccc;
 	padding: 6px 10px;
 	text-align: center;
+	max-width: 25em;
 }
 
 th {
 	background: #eee;
+}
+
+.abs-input {
+	width: 3em;
+	text-align: center;
+}
+
+/* 画面全体を覆う暗い背景 */
+.modal-overlay {
+	border: 1px solid #ab1c23;
+	padding: 0;
+}
+.modal-overlay::backdrop {
+	background-color: rgba(0, 0, 0, 0.8);
+}
+.modal-box {
+	background-color: rgb(240, 240, 255);
+	max-width: 80vw;
+	overflow-wrap: anywhere;
+	line-height: 1.5em;
+	padding: 40px 60px;
 }
