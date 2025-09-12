@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<title>DNA Calculator</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<h1>DNA Calculator</h1>
+
+	<label>[Na+] /mM: <input type="number" id="naInput" value="50" class="conc-input"></label>
+	<label>[ssDNA] /μM: <input type="number" id="dnaInput" value="0.5" class="conc-input"></label>
+	<br><br>
+
+	<div class="input-row">
+		<div class="input-block">
+			<label for="sequence">5'- Sequence -3'</label>
+			<textarea id="sequence" rows="10" placeholder="Enter DNA sequence"></textarea>
+		</div>
+		<div class="input-block">
+			<label for="abs">Abs. 260 nm</label>
+			<textarea id="abs" row="10" class="abs-input" placeholder="abs (optional)"></textarea>
+		</div>
+	</div>
+	<ul>
+		<li>Input one sequence per row.</li>
+		<li>"Abs." is used only for concentration calculations.</li>
+	</ul>
+	<br>
+	<button id="calculateBtn">Calculate</button>
+	<button id="downloadBtn" disabled>Download TSV</button>
+
+	<div id="results"></div>
+
+	<script src="script.js"></script>
+</body>
+</html>

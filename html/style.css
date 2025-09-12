@@ -1,0 +1,93 @@
+body {
+	font-family: 'NOTO Sans', Arial, sans-serif;
+	margin: 20px;
+	background: #f5f5f5;
+}
+input {
+	font-family: 'NOTO Sans', Arial, sans-serif;
+}
+
+h1 {
+	color: #333;
+}
+
+ul {
+	padding-left: 1em;
+	margin: 0;
+}
+ul li{
+	padding: 0.3em 0;
+}
+
+.conc-input {
+	width: 3em;
+}
+
+.input-row {
+	display: flex;
+	gap: 0.5em;
+	align-items: stretch;	/* 高さを揃える */
+}
+
+.input-block {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+}
+
+textarea {
+	font-family: 'NOTO Sans', Arial, sans-serif;
+	white-space: nowrap;	/* 改行しない */
+	overflow-x: auto;		/* 横スクロール */
+	resize: vertical;		/* 縦方向リサイズ可 */
+	line-height: 1.5em;		/* 行間を調整 */
+}
+
+.abs-input {
+	flex: 1;	/* 高さをラベル以外で揃える */
+	width: 10em;	/* absは狭め */
+}
+
+label {
+	margin-right: 15px;
+}
+
+button {
+	margin: 5px 10px 15px 0;
+	padding: 8px 14px;
+	font-size: 14px;
+	cursor: pointer;
+	border: none;
+	border-radius: 4px;
+	background: #ab1c23;
+	color: white;
+}
+
+#sequence{
+	font-family: "Firge", 'NOTO Sans Mono', monospace, Arial, sans-serif;
+}
+
+button:disabled {
+	background: #aaa;
+	cursor: not-allowed;
+}
+
+#results {
+	overflow-x: auto;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+	background: white;
+}
+
+th, td {
+	border: 1px solid #ccc;
+	padding: 6px 10px;
+	text-align: center;
+}
+
+th {
+	background: #eee;
+}
