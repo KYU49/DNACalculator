@@ -32,18 +32,14 @@ window.onload = () => {
 		seq = params.get("seq") || "";
 		abs = params.get("abs") || "";
 		na = params.get("na") || 50;
-		/*
 		mg = params.get("mg") || 0;
 		dntp = params.get("dntp") || 0;
-		*/
 		dna = params.get("dna") || 0.5;
 		document.getElementById("seq").value = seq;
 		document.getElementById("abs").value = abs;
 		document.getElementById("naInput").value = na;
-		/*
 		document.getElementById("mgInput").value = mg;
 		document.getElementById("dntpInput").value = dntp;
-		*/
 		document.getElementById("dnaInput").value = dna;
 		calculate();
 	}
@@ -51,16 +47,14 @@ window.onload = () => {
 	function moveForCalc(){
 		const seq = document.getElementById("seq").value.trim();
 		if (!seq) return;
-		const abs = document.getElementById("abs").value;
-		const na = document.getElementById("naInput").value;
-		/*
-		const mg = document.getElementById("mgInput").value;
-		const dntp = document.getElementById("dntpInput").value;
-		*/
-		const dna = document.getElementById("dnaInput").value;
+		const abs = Number(document.getElementById("abs").value);
+		const na = Number(document.getElementById("naInput").value);
+		const mg = Number(document.getElementById("mgInput").value);
+		const dntp = Number(document.getElementById("dntpInput").value);
+		const dna = Number(document.getElementById("dnaInput").value);
 		const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, ""); 
-		//const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&mg=${mg}&dntp=${dntp}&dna=${dna}`;
-		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&dna=${dna}`;
+		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&mg=${mg}&dntp=${dntp}&dna=${dna}`;
+		//const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&dna=${dna}`;
 		location.href = url;
 	}
 	function clearInput(){
@@ -239,18 +233,17 @@ window.onload = () => {
 		const dsEpsilon = (1 - (0.287 * (bases.A + bases.T) + 0.059 * (bases.C + bases.G) ) / length) * ( epsilon + sumProduct(pdsRev, epsilonTable2) - sumProduct(pdsRev, epsilonTable1) );
 
 		// Nearest Neighbor法によるTm
-		const concNa = document.getElementById("naInput").value;
-		/*
-		const concMg = document.getElementById("mgInput").value;
-		const concDNTP = document.getElementById("dntpInput").value;
-		*/
-		const concDNA = document.getElementById("dnaInput").value;
-
+		const concNa = Number(document.getElementById("naInput").value);
+		const concMg = Number(document.getElementById("mgInput").value);
+		const concDNTP = Number(document.getElementById("dntpInput").value);
+		const concDNA = Number(document.getElementById("dnaInput").value);
 		// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
 		// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
 		// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
 		// 16.2はhttps://doi.org/10.1073/pnas.95.4.1460の∂ΔG/∂ln[Na+] = −0.175 kcal/mol → ∂Tm/∂log[Na+] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)を参照。基本的にはポリマーの16.6がよく使われる。
-		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(concNa / 1000/* + 120 * Math.sqrt(concMg / 1000 - concDNTP / 1000)*/);
+		//const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10( (concNa + 120 * Math.sqrt(concMg - concDNTP) ) / 1000);
+		const naMod = concNa + 120 * Math.sqrt(concMg - concDNTP);
+		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(naMod / 1000);
 
 		// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
 		let conc_uM = 0;
@@ -394,13 +387,13 @@ window.onload = () => {
 				"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
 				"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
 				"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
-				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", /*"[Mg^2+] /mM", "[dNTPs] /mM", */"[Primer] /μM", "Used Values for Tm"
+				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[Mg^2+] /mM", "[dNTPs] /mM", "[Primer] /μM", "Used Values for Tm"
 			].join("\t") + "\n";
 		lastResults.forEach(r => {
 			Object.keys(r).forEach(key => {
 				tsv += r[key] + "\t";
 			});
-			tsv += na + "\t" + /*mg + "\t" + dntp + "\t" */+ dna + "\t" + hsValues + "\n";
+			tsv += na + "\t" + mg + "\t" + dntp + "\t" + dna + "\t" + hsValues + "\n";
 		});
 
 		const blob = new Blob([tsv], { type: "text/tab-separated-values" });
