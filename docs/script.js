@@ -185,11 +185,11 @@ window.onload = () => {
 			abs: abs,
 			tmNN: tmNearestNeighbor.toFixed(2),
 			tmWallace: tmWallace,
-			epsilon: epsilon,
+			epsilon: epsilon.toFixed(0),
 			conc_uM: conc_uM,
 			conc_nguL: conc_nguL,
 			mw: mw.toFixed(2),
-			dsEpsilon: dsEpsilon,
+			dsEpsilon: dsEpsilon.toFixed(0),
 			dsConc_uM: dsConc_uM,
 			dsConc_nguL: dsConc_nguL,
 			dsMw: dsMw.toFixed(2),
@@ -272,13 +272,13 @@ window.onload = () => {
 							const conc = abs / rConst.epsilon * 1000000;
 							trConst.getElementsByClassName("conc_uM")[0].textContent = conc.toFixed(2);
 							lastResults[iConst].conc_uM = conc.toFixed(2);
-							trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(3);
-							lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(3);
+							trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(2);
+							lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(2);
 							const dsConc = abs / rConst.dsEpsilon * 1000000;
 							trConst.getElementsByClassName("dsConc_uM")[0].textContent = dsConc.toFixed(2);
 							lastResults[iConst].dsConc_uM = dsConc.toFixed(2);
-							trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(3);
-							lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(3);
+							trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(2);
+							lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(2);
 							e.target.value = absText;
 						});
 						input.classList.add("abs-input");
