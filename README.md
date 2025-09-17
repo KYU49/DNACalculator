@@ -13,7 +13,7 @@ The English version of this document is provided at the end. Please note that it
 - 結果はブラウザで確認でき、**TSVファイル**としてダウンロード可能。
 
 ## Excel
-[DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
+ダウンロード: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
 ウェブアプリと同じ計算が可能です。
 
 ## アルゴリズム
@@ -34,6 +34,7 @@ Access here: [https://kyu49.github.io/DNACalculator/](https://kyu49.github.io/DN
 - View results in the browser or download as a **TSV file**.
 
 ## Excel
+Download: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
 Performs the same calculations as the web app.
 
 ## Algorithm
