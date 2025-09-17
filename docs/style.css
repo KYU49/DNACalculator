@@ -24,6 +24,10 @@ input {
 	font-family: 'NOTO Sans', Arial, sans-serif;
 }
 
+.hide {
+	display: none;
+}
+
 h1 {
 	color: #333;
 }

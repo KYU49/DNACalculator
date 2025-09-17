@@ -23,6 +23,8 @@ window.onload = () => {
 
 	let lastResults = [];
 
+	let seq = "";
+
 	function loadParams() {
 		const params = new URLSearchParams(window.location.search);
 		seq = params.get("seq") || "";
@@ -33,9 +35,7 @@ window.onload = () => {
 		document.getElementById("abs").value = abs;
 		document.getElementById("naInput").value = na;
 		document.getElementById("dnaInput").value = dna;
-		if (seq){
-			calculate();
-		}
+		calculate();
 	}
 
 	function moveForCalc(){
@@ -56,7 +56,10 @@ window.onload = () => {
 	}
 
 	function calculate() {
-		const seqInput = document.getElementById("seq").value.trim();
+		if(!seq){
+			return;
+		}
+		const seqInput = seq;
 		const sequences = seqInput.split(/\r?\n/);
 		const absInput = document.getElementById("abs").value;
 		const absorbances = absInput.split(/\r?\n/);
@@ -137,7 +140,7 @@ window.onload = () => {
 		// ε260 (モル吸光係数)
 		const epsilonTable1 = { 
 			pdA: 15400, pdC: 7400, pdG: 11500, pdT: 8700
-		}
+		};
 		const epsilonTable2 = { 
 			dApdA: 27400, dApdC: 21200, dApdG: 25000, dApdT: 22800, 
 			dCpdA: 21200, dCpdC: 14600, dCpdG: 18000, dCpdT: 15200, 
