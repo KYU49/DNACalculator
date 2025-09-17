@@ -18,7 +18,7 @@ The English version of this document is provided at the end. Please note that it
 
 ## アルゴリズム
 - **Tm**と**吸光係数**は**Nearest Neighbor法**で計算。  
-- 吸光係数の計算方法はATDBio社のページで解説されています: [Ultraviolet absorbance of oligonucleotides](https://atdbio.com/nucleic-acids-book/Ultraviolet-absorbance-of-oligonucleotides)
+- 吸光係数の計算方法の参考: [*Biophys Chem* **2008**, *133*, 66.](https://doi.org/10.1016/j.bpc.2007.12.004)
 
 
 
@@ -39,5 +39,5 @@ Performs the same calculations as the web app.
 
 ## Algorithm
 - **Tm** and **molar absorptivity** are calculated using the **Nearest Neighbor method**.  
-- Absorptivity calculation method summarized by ATDBio's Web site: [Ultraviolet absorbance of oligonucleotides](https://atdbio.com/nucleic-acids-book/Ultraviolet-absorbance-of-oligonucleotides)
+- Reference of absorptivity calculation method: [*Biophys Chem* **2008**, *133*, 66.](https://doi.org/10.1016/j.bpc.2007.12.004)
 
