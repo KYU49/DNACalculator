@@ -14,7 +14,7 @@ The English version of this document is provided at the end. Please note that it
 
 ## Excel
 ダウンロード: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
-ウェブアプリと同じ計算が可能です。
+ウェブアプリと同じ計算が可能です(ただし、TmはBreslauer'sの値のみ対応)。
 
 
 # DNA Calculator
@@ -30,10 +30,11 @@ Access here: [https://kyu49.github.io/DNACalculator/](https://kyu49.github.io/DN
 
 ## Excel
 Download: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
-Performs the same calculations as the web app.
+The same calculations as the web app are available (but Tm is supported only with Breslauer's values).
 
 
 ## References
-* Tataurov, A. V. *et al. Biophys. Chem.* **2008**, *133*, 66.
 * Breslauer, K. J. *et al. Proc. Natl. Acad. Sci.* **1986**, *83*, 3746.
+* Sugimoto, N. *et al. Nucleic Acid Res.* **1996**, *24* 4501.
 * SantaLucia, J. *Proc. Natl. Acad. Sci.* **1998**, *95*, 1460.
+* Tataurov, A. V. *et al. Biophys. Chem.* **2008**, *133*, 66.

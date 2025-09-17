@@ -20,10 +20,12 @@ window.onload = () => {
 	document.getElementById("calculateBtn").addEventListener("click", moveForCalc);
 	document.getElementById("downloadBtn").addEventListener("click", downloadTSV);
 	document.getElementById("clearBtn").addEventListener("click", clearInput);
+	document.forms.hsValues.addEventListener("change", calculate);
 
 	let lastResults = [];
 
 	let seq = "";
+	let hsValues = "";
 
 	function loadParams() {
 		const params = new URLSearchParams(window.location.search);
@@ -55,12 +57,84 @@ window.onload = () => {
 		}
 	}
 
+	let deltaHTable, deltaSTable, initiationS, deltaG;
+	function setHSValues(){
+		// ΔH /kcal･mol^-1
+		// ΔS /cal･mol^-1･K^-1
+		// 注意: ΔHはkcalだが、ΔSはcal
+		hsValues = document.forms.hsValues.elements["hsValues"].value;
+		switch(hsValues) {
+			case "breslauer":
+				deltaHTable = { 
+					dApdA: -9.1, dApdC: -6.5, dApdG: -7.8, dApdT: -8.6, 
+					dCpdA: -5.8, dCpdC: -11.0, dCpdG: -11.9, dCpdT: -7.8, 
+					dGpdA: -5.6, dGpdC: -11.1, dGpdG: -11.0, dGpdT: -6.5, 
+					dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
+				};
+				deltaSTable = { 
+					dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
+					dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
+					dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
+					dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
+				};
+				initiationS = -10.8;
+				deltaG = 5;
+				break;
+			case "sugimoto":
+				deltaHTable = { 
+					dApdA: -8.0, dApdC: -9.4, dApdG: -6.6, dApdT: -5.6, 
+					dCpdA: -8.2, dCpdC: -10.9, dCpdG: -11.8, dCpdT: -6.6, 
+					dGpdA: -8.8, dGpdC: -10.5, dGpdG: -10.9, dGpdT: -9.4, 
+					dTpdA: -6.6, dTpdC: -8.8, dTpdG: -8.2, dTpdT: -8.0 
+				};
+				deltaSTable = { 
+					dApdA: -21.9, dApdC: -25.5, dApdG: -16.4, dApdT: -15.2, 
+					dCpdA: -21.0, dCpdC: -28.4, dCpdG: -29.0, dCpdT: -16.4, 
+					dGpdA: -23.5, dGpdC: -26.4, dGpdG: -28.4, dGpdT: -25.5, 
+					dTpdA: -18.4, dTpdC: -23.5, dTpdG: -21.0, dTpdT: -21.9 
+				};
+				initiationS = -9;
+				deltaG = 3.4;
+				break;
+			case "santalucia":
+				deltaHTable = { 
+					dApdA: -7.9, dApdC: -8.4, dApdG: -7.8, dApdT: -7.2, 
+					dCpdA: -8.5, dCpdC: -8.0, dCpdG: -10.6, dCpdT: -7.8, 
+					dGpdA: -8.2, dGpdC: -9.8, dGpdG: -8.0, dGpdT: -8.4, 
+					dTpdA: -7.2, dTpdC: -8.2, dTpdG: -8.5, dTpdT: -7.9 
+				};
+				deltaSTable = { 
+					dApdA: -22.2, dApdC: -22.4, dApdG: -21.0, dApdT: -20.4, 
+					dCpdA: -22.7, dCpdC: -19.9, dCpdG: -27.2, dCpdT: -21.0, 
+					dGpdA: -22.2, dGpdC: -24.4, dGpdG: -19.9, dGpdT: -22.4, 
+					dTpdA: -21.3, dTpdC: -22.2, dTpdG: -22.7, dTpdT: -22.2 
+				};
+				initiationS = -10.8;
+				deltaG = 5;
+				break;
+		}
+		const hvalues = document.getElementById("hvalues");
+		while(hvalues.childElementCount > 2){hvalues.removeChild(hvalues.lastChild);}
+		Object.entries(deltaHTable).forEach(([key, value]) => {
+			const td = document.createElement("td");
+			td.textContent = value;
+			hvalues.appendChild(td);
+		});
+		const svalues = document.getElementById("svalues");
+		while(svalues.childElementCount > 2){svalues.removeChild(svalues.lastChild);}
+		Object.entries(deltaSTable).forEach(([key, value]) => {
+			const td = document.createElement("td");
+			td.textContent = value;
+			svalues.appendChild(td);
+		});
+	}
+
 	function calculate() {
+		setHSValues();
 		if(!seq){
 			return;
 		}
-		const seqInput = seq;
-		const sequences = seqInput.split(/\r?\n/);
+		const sequences = seq.split(/\r?\n/);
 		const absInput = document.getElementById("abs").value;
 		const absorbances = absInput.split(/\r?\n/);
 
@@ -154,25 +228,12 @@ window.onload = () => {
 		// Nearest Neighbor法によるTm
 		const concNa = document.getElementById("naInput").value;
 		const concDNA = document.getElementById("dnaInput").value;
-		// ΔH /kcal･mol^-1
-		const deltaHTable = { 
-			dApdA: -9.1, dApdC: -6.5, dApdG: -7.8, dApdT: -8.6, 
-			dCpdA: -5.8, dCpdC: -11.0, dCpdG: -11.9, dCpdT: -7.8, 
-			dGpdA: -5.6, dGpdC: -11.1, dGpdG: -11.0, dGpdT: -6.5, 
-			dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
-		};
-		// ΔS /cal･mol^-1･K^-1
-		// 注意: ΔHはkcalだが、ΔSはcal
-		const deltaSTable = { 
-			dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
-			dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
-			dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
-			dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
-		};
+
 		// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
 		// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
 		// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
-		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (-10.8 + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.6 * Math.log10(concNa / 1000);
+		// 16.2はhttps://doi.org/10.1073/pnas.95.4.1460の∂ΔG/∂ln[Na+] = −0.175 kcal/mol → ∂Tm/∂log[Na+] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)を参照。基本的にはポリマーの16.6がよく使われる。
+		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(concNa / 1000);
 
 		// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
 		let conc_uM = 0;

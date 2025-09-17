@@ -66,17 +66,23 @@
 		</thead>
 		<tbody>
 			<tr>
-				<td>ε(ss)</td><td>15400</td><td>7400</td><td>11500</td><td>8700</td><td>27400</td><td>21200</td><td>25000</td><td>22800</td><td>21200</td><td>14600</td><td>18000</td><td>15200</td><td>25200</td><td>17600</td><td>21600</td><td>20000</td><td>23400</td><td>16200</td><td>19000</td><td>16800</td>
+				<td>ε<sub>260,ss</sub></td><td>15400</td><td>7400</td><td>11500</td><td>8700</td><td>27400</td><td>21200</td><td>25000</td><td>22800</td><td>21200</td><td>14600</td><td>18000</td><td>15200</td><td>25200</td><td>17600</td><td>21600</td><td>20000</td><td>23400</td><td>16200</td><td>19000</td><td>16800</td>
 			</tr>
-			<tr>
-				<td>ΔH /kcal･mol-1</td><td colspan="4"></td><td>-9.1</td><td>-6.5</td><td>-7.8</td><td>-8.6</td><td>-5.8</td><td>-11</td><td>-11.9</td><td>-7.8</td><td>-5.6</td><td>-11.1</td><td>-11</td><td>-6.5</td><td>-6</td><td>-5.6</td><td>-5.8</td><td>-9.1</td>
+			<tr id="hvalues">
+				<td>ΔH /kcal･mol<sup>-1</sup></td><td colspan="4"></td>
 			</tr>
-			<tr>
-				<td>ΔS /cal･mol-1K-1</td><td colspan="4"></td><td>-24</td><td>-17.3</td><td>-20.8</td><td>-23.9</td><td>-12.9</td><td>-26.6</td><td>-27.8</td><td>-20.8</td><td>-13.5</td><td>-26.7</td><td>-26.6</td><td>-17.3</td><td>-16.9</td><td>-13.5</td><td>-12.9</td><td>-24</td>
+			<tr id="svalues">
+				<td>ΔS /cal･mol<sup>-1</sup>K<sup>-1</sup></td><td colspan="4"></td>
 			</tr>
-			</tbody>
-		</table>
-		<br>
+		</tbody>
+	</table>
+	<form name="hsValues">
+		<legend class="bold">Select values for T<sub>m</sub> calculation</legend>
+		<input type="radio" id="breslauer" name="hsValues" value="breslauer" checked><label for="breslauer">Breslauer's (1986<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>]</sup>; for TOYOBO's PCR)</label>
+		<input type="radio" id="sugimoto" name="hsValues" value="sugimoto"><label for="sugimoto">Sugimoto's (1996<sup>[<a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>]</sup>)</label>
+		<input type="radio" id="santalucia" name="hsValues" value="santalucia"><label for="santalucia">SantaLucia's (1998<sup>[<a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>)</label>
+	</form>
+
 	<table class="auto-width-table">
 		<thead>
 			<tr>
@@ -92,25 +98,48 @@
 			</tr>
 		</tbody>
 	</table>
+
 	<hr>
+
 	<h2>Formula</h2>
 	
-	<math display="block"><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mn is="true">260</mn></mrow></msub><mo is="true">=</mo><munderover is="true"><mo is="true">∑</mo><mrow is="true"><mi is="true">i</mi><mo is="true">=</mo><mn is="true">1</mn></mrow><mrow is="true"><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub><mo is="true">−</mo><mn is="true">1</mn></mrow></munderover><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi><mo is="true">,</mo><mi is="true">i</mi><mo is="true">+</mo><mn is="true">1</mn></mrow></msub></mrow><mo is="true">−</mo><munderover is="true"><mo is="true">∑</mo><mrow is="true"><mi is="true">i</mi><mo is="true">=</mo><mn is="true">2</mn></mrow><mrow is="true"><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub><mo is="true">−</mo><mn is="true">1</mn></mrow></munderover><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mi is="true">i</mi></msub></mrow></mrow></math>
-	The 
-	<math><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi><mo is="true">,</mo><mi is="true">i</mi><mo is="true">+</mo><mn is="true">1</mn></mrow></msub></math>
-	 are the extinction coefficients for doublets of nucleotides, the 
-	<math><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi></mrow></msub></math>
+	<math display="block"><mrow><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi></mrow></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mi>ɛ</mi><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><mo>−</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>2</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mi>ɛ</mi><mi>i</mi></msub></mrow></mrow></math>
+	<math display="block"><mrow><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi is =true>ds</mi></mrow></msub><mo>=</mo><mo>(</mo><mn>1</mn><mo>-</mo><mi>h</mi><mo>)</mo><mo>(</mo><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi></mrow></msub><mo>+</mo><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi><mo>(</mo><mi>rev</mi><mo>)</mo></mrow></msub><mo>)</mo></math>
+	<math display="block"><mrow><mi>h</mi><mo>=</mo><mo>(</mo><mn>0.059</mn><mo>&times;</mo><msub><mi>Count</mi><mi>GC</mi></msub><mo>+</mo><mn>0.278</mn><mo>&times;</mo><msub><mi>Count</mi><mi>AT</mi></msub><mo>)</mo><mo>/</mo><mi>Length</mi></mrow></math>
+	where 
+	<math><msub><mi>ɛ</mi><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></math>
+	 are the extinction coefficients for doublets of nucleotides, 
+	<math><msub><mi>ɛ</mi><mrow><mi>i</mi></mrow></msub></math>
 	 is the extinction coefficient for the nucleotide i, and 
-	<math><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub></math>
-	 is the number of nucleotides in the oligomer sequence<sup>[<a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">1</a>]</sup>.
-	<math display="block"><msub><mi>T</mi><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">M</mi></mrow></mrow></mrow></msub><mo>=</mo><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">&#x394;</mi></mrow><mi>H</mi><mrow data-mjx-texclass="ORD"><msup><mi></mi><mo>&#x2218;</mo></msup></mrow><mrow data-mjx-texclass="ORD"><mo>/</mo></mrow><mo stretchy="false">(</mo><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">&#x394;</mi></mrow><mi>S</mi><mrow data-mjx-texclass="ORD"><msup><mi></mi><mo>&#x2218;</mo></msup></mrow><mo>+</mo><mi>R</mi><mspace width=".167em"></mspace><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi data-mjx-auto-op="false">ln</mi><mspace width=".167em"></mspace></mrow></mrow><msub><mi>C</mi><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">T</mi></mrow></mrow></mrow></msub><mo stretchy="false">)</mo><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mo>,</mo></mrow></mrow></math>
-	<i>R</i> is gas constant. <i>C</i><sub>T</sub> is primer concentration<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.
+	<math><msub><mi>N</mi><mi>b</mi></msub></math>
+	 is the number of nucleotides in the oligomer sequence<sup>[<a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">4</a>]</sup>.
+
+
+	<math display="block">
+		<msub><mi>T</mi><mi mathvariant="normal">m</mi></msub>
+		<mo>=</mo>		
+		<mrow><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup></mrow>
+		<mo>&divide;</mo>
+		<mrow><mo>(</mo><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>+</mo><mi>R</mi><mspace width=".167em"></mspace><mi>ln</mi><mspace width=".167em"></mspace><msub><mi>C</mi><mi>T</mi></msub><mo>)</mo></mrow>
+		<mo>=</mo>
+		<mrow><mi>1000</mi><mo>&times;</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow>
+		<mo>&divide;</mo>
+		<mrow><mo>(</mo><mrow>
+			<mi>Initial</mi><mi>S</mi> + <munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><mo>+</mo><mn>1.987</mn><mspace width=".167em"></mspace><mi>ln</mi><mrow><mo>[</mo><mi>Primer</mi><mo>]</mo></mrow>
+		</mrow><mo>)</mo>
+		<mo>+</mo><mn>16.2</mn><mspace width=".167em"></mspace><msub><mi>log</mi><mn>10</mn></msub><mrow><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo><mo>-</mo><mn>273.15</mn>
+		</mrow>
+
+		<!-- const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.6 * Math.log10(concNa / 1000); -->
+	</math>
+	where <i>R</i> is gas constant (= 1.987 kcal/(K･mol)), <i>C</i><sub>T</sub> is primer concentration, Initial <i>S</i> is -10.8 or -9.0 (Sugimot's value), and ∂ΔG/∂ln[Na<sup>+</sup>] = −0.175 kcal/mol → ∂<i>T</i><sub>m</sub>/∂log[Na<sup>+</sup>] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>, <a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.
 
 	<h2>References</h2>
 	<ol>
-		<li><a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">Tataurov, A. V. <i>et al. Biophys. Chem.</i> <b>2008</b>, <i>133</i>, 66.</a></li>
 		<li><a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">Breslauer, K. J. <i>et al. Proc. Natl. Acad. Sci.</i> <b>1986</b>, <i>83</i>, 3746.</a></li>
+		<li><a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">Sugimoto, N. <i>et al. Nucleic Acids Res.</i> <b>1996</b>, <i>24</i>, 4501.</a></li>
 		<li><a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">SantaLucia, J. <i>Proc. Natl. Acad. Sci.</i> <b>1998</b>, <i>95</i>, 1460.</a></li>
+		<li><a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">Tataurov, A. V. <i>et al. Biophys. Chem.</i> <b>2008</b>, <i>133</i>, 66.</a></li>
 	</ol>
 
 	<dialog class="modal-overlay" id="modalOverlay">
