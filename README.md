@@ -38,3 +38,4 @@ The same calculations as the web app are available (but Tm is supported only wit
 * Sugimoto, N. *et al. Nucleic Acid Res.* **1996**, *24* 4501.
 * SantaLucia, J. *Proc. Natl. Acad. Sci.* **1998**, *95*, 1460.
 * Tataurov, A. V. *et al. Biophys. Chem.* **2008**, *133*, 66.
+* von Ahsen, N. *et al. Clin. Chem.* **2001**, *47* 1956.

@@ -134,14 +134,18 @@
 
 		<!-- const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.6 * Math.log10(concNa / 1000); -->
 	</math>
-	where <i>R</i> is gas constant (= 1.987 kcal/(K･mol)), <i>C</i><sub>T</sub> is primer concentration, Initial <i>S</i> is -10.8 or -9.0 (Sugimot's value), and ∂ΔG/∂ln[Na<sup>+</sup>] = −0.175 kcal/mol → ∂<i>T</i><sub>m</sub>/∂log[Na<sup>+</sup>] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>, <a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.
-
+	where <i>R</i> is gas constant (= 1.987 kcal/(K･mol)), <i>C</i><sub>T</sub> is primer concentration, Initial <i>S</i> is -10.8 or -9.0 (Sugimot's value), and ∂ΔG/∂ln[Na<sup>+</sup>] = −0.175 kcal/mol → ∂<i>T</i><sub>m</sub>/∂log[Na<sup>+</sup>] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>, <a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.<br>
+	The effects of magnesium ions and dNTPs were represented as an effective sodium ion concentration, calculated according to the following equation<sup>[<a href="http://www.ncbi.nlm.nih.gov/pubmed/11673362" target="_blank">5</a>]</sup>.
+	<math display="block">
+		<mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>(</mo><mi>eq</mi><mo>)</mo><mo>]</mo><mo>=</mo><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo><mo>+</mo><mn>120</mn><mo>&times;</mo><msqrt><mrow><mo>[</mo><msup><mi>Mg</mi><mrow><mn>2</mn><mo>+</mo></mrow></msup><mo>]</mo><mo>-</mo><mo>[</mo><mi>dNTPs</mi><mo>]</mo></mrow></msqrt>
+	</math>
 	<h2>References</h2>
 	<ol>
 		<li><a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">Breslauer, K. J. <i>et al. Proc. Natl. Acad. Sci.</i> <b>1986</b>, <i>83</i>, 3746.</a></li>
 		<li><a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">Sugimoto, N. <i>et al. Nucleic Acids Res.</i> <b>1996</b>, <i>24</i>, 4501.</a></li>
 		<li><a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">SantaLucia, J. <i>Proc. Natl. Acad. Sci.</i> <b>1998</b>, <i>95</i>, 1460.</a></li>
 		<li><a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">Tataurov, A. V. <i>et al. Biophys. Chem.</i> <b>2008</b>, <i>133</i>, 66.</a></li>
+		<li><a href="http://www.ncbi.nlm.nih.gov/pubmed/11673362" target="_blank"></a>von Ahsen, N. <i>et al. Clin. Chem.</i> <b>2001</b>, <i>47</i> 1956.</a></li>
 	</ol>
 
 	<dialog class="modal-overlay" id="modalOverlay">
