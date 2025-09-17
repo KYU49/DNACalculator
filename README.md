@@ -18,7 +18,6 @@ The English version of this document is provided at the end. Please note that it
 
 ## アルゴリズム
 - **Tm**と**吸光係数**は**Nearest Neighbor法**で計算。  
-- 吸光係数の計算方法の参考: [*Biophys Chem* **2008**, *133*, 66.](https://doi.org/10.1016/j.bpc.2007.12.004)
 
 
 
@@ -39,5 +38,4 @@ Performs the same calculations as the web app.
 
 ## Algorithm
 - **Tm** and **molar absorptivity** are calculated using the **Nearest Neighbor method**.  
-- Reference of absorptivity calculation method: [*Biophys Chem* **2008**, *133*, 66.](https://doi.org/10.1016/j.bpc.2007.12.004)
 
