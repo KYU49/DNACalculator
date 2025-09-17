@@ -26,8 +26,12 @@
 <body>
 	<h1>DNA Calculator</h1>
 
-	<label>[Na+] /mM: <input type="number" id="naInput" value="50" class="conc-input"></label>
-	<label>[Primer] /μM<sup>†</sup>: <input type="number" id="dnaInput" value="0.5" class="conc-input"></label><br>
+	<label>[Na<sup>+</sup>] /mM: <input type="text" id="naInput" value="50" class="conc-input"></label>
+	<!--
+	<label>[Mg<sup>2+</sup>] /mM: <input type="text" id="mgInput" value="0" class="conc-input"></label>
+	<label>[dNTPs] /mM: <input type="text" id="dntpInput" value="0" class="conc-input"></label>
+	-->
+	<label>[Primer] /μM<sup>†</sup>: <input type="text" id="dnaInput" value="0.5" class="conc-input"></label><br>
 	<small><sup>†</sup>When [DNA] &lt;&lt; [Primer], input the initial primer concentration. When [DNA] = [Primer], input 1/4 primer concentration.</small>
 	<br><br>
 
