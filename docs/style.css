@@ -40,6 +40,10 @@ ul li{
 	padding: 0.3em 0;
 }
 
+math {
+	padding: 0.5em 0;
+}
+
 .conc-input {
 	width: 3em;
 }

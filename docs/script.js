@@ -162,13 +162,17 @@ window.onload = () => {
 			dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
 		};
 		// ΔS /cal･mol^-1･K^-1
+		// 注意: ΔHはkcalだが、ΔSはcal
 		const deltaSTable = { 
 			dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
 			dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
 			dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
 			dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
 		};
-		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (-10.8 + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000 / 4) ) - 273.15 + 16.6 * Math.log10(concNa / 1000);
+		// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
+		// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
+		// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
+		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (-10.8 + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.6 * Math.log10(concNa / 1000);
 
 		// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
 		let conc_uM = 0;

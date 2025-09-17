@@ -27,7 +27,8 @@
 	<h1>DNA Calculator</h1>
 
 	<label>[Na+] /mM: <input type="number" id="naInput" value="50" class="conc-input"></label>
-	<label>[ssDNA] /μM: <input type="number" id="dnaInput" value="0.5" class="conc-input"></label>
+	<label>[Primer] /μM<sup>†</sup>: <input type="number" id="dnaInput" value="0.5" class="conc-input"></label><br>
+	<small><sup>†</sup>When [DNA] &lt;&lt; [Primer], input the initial primer concentration. When [DNA] = [Primer], input 1/4 primer concentration.</small>
 	<br><br>
 
 	<div class="input-row">
@@ -91,6 +92,26 @@
 			</tr>
 		</tbody>
 	</table>
+	<hr>
+	<h2>Formula</h2>
+	
+	<math display="block"><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mn is="true">260</mn></mrow></msub><mo is="true">=</mo><munderover is="true"><mo is="true">∑</mo><mrow is="true"><mi is="true">i</mi><mo is="true">=</mo><mn is="true">1</mn></mrow><mrow is="true"><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub><mo is="true">−</mo><mn is="true">1</mn></mrow></munderover><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi><mo is="true">,</mo><mi is="true">i</mi><mo is="true">+</mo><mn is="true">1</mn></mrow></msub></mrow><mo is="true">−</mo><munderover is="true"><mo is="true">∑</mo><mrow is="true"><mi is="true">i</mi><mo is="true">=</mo><mn is="true">2</mn></mrow><mrow is="true"><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub><mo is="true">−</mo><mn is="true">1</mn></mrow></munderover><mrow is="true"><msub is="true"><mi is="true">ɛ</mi><mi is="true">i</mi></msub></mrow></mrow></math>
+	The 
+	<math><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi><mo is="true">,</mo><mi is="true">i</mi><mo is="true">+</mo><mn is="true">1</mn></mrow></msub></math>
+	 are the extinction coefficients for doublets of nucleotides, the 
+	<math><msub is="true"><mi is="true">ɛ</mi><mrow is="true"><mi is="true">i</mi></mrow></msub></math>
+	 is the extinction coefficient for the nucleotide i, and 
+	<math><msub is="true"><mi is="true">N</mi><mi is="true">b</mi></msub></math>
+	 is the number of nucleotides in the oligomer sequence<sup>[<a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">1</a>]</sup>.
+	<math display="block"><msub><mi>T</mi><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">M</mi></mrow></mrow></mrow></msub><mo>=</mo><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">&#x394;</mi></mrow><mi>H</mi><mrow data-mjx-texclass="ORD"><msup><mi></mi><mo>&#x2218;</mo></msup></mrow><mrow data-mjx-texclass="ORD"><mo>/</mo></mrow><mo stretchy="false">(</mo><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">&#x394;</mi></mrow><mi>S</mi><mrow data-mjx-texclass="ORD"><msup><mi></mi><mo>&#x2218;</mo></msup></mrow><mo>+</mo><mi>R</mi><mspace width=".167em"></mspace><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi data-mjx-auto-op="false">ln</mi><mspace width=".167em"></mspace></mrow></mrow><msub><mi>C</mi><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mi mathvariant="normal">T</mi></mrow></mrow></mrow></msub><mo stretchy="false">)</mo><mrow data-mjx-texclass="ORD"><mrow data-mjx-texclass="ORD"><mo>,</mo></mrow></mrow></math>
+	<i>R</i> is gas constant. <i>C</i><sub>T</sub> is primer concentration<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.
+
+	<h2>References</h2>
+	<ol>
+		<li><a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">Tataurov, A. V. <i>et al. Biophys. Chem.</i> <b>2008</b>, <i>133</i>, 66.</a></li>
+		<li><a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">Breslauer, K. J. <i>et al. Proc. Natl. Acad. Sci.</i> <b>1986</b>, <i>83</i>, 3746.</a></li>
+		<li><a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">SantaLucia, J. <i>Proc. Natl. Acad. Sci.</i> <b>1998</b>, <i>95</i>, 1460.</a></li>
+	</ol>
 
 	<dialog class="modal-overlay" id="modalOverlay">
 		<div class="modal-box" id="modalBox"></div>

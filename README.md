@@ -16,10 +16,6 @@ The English version of this document is provided at the end. Please note that it
 ダウンロード: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
 ウェブアプリと同じ計算が可能です。
 
-## アルゴリズム
-- **Tm**と**吸光係数**は**Nearest Neighbor法**で計算。  
-
-
 
 # DNA Calculator
 
@@ -36,6 +32,8 @@ Access here: [https://kyu49.github.io/DNACalculator/](https://kyu49.github.io/DN
 Download: [DNACalculator.xltx](https://github.com/KYU49/DNACalculator/raw/refs/heads/main/DNACalculator.xltx)  
 Performs the same calculations as the web app.
 
-## Algorithm
-- **Tm** and **molar absorptivity** are calculated using the **Nearest Neighbor method**.  
 
+## References
+* Tataurov, A. V. *et al. Biophys. Chem.* **2008**, *133*, 66.
+* Breslauer, K. J. *et al. Proc. Natl. Acad. Sci.* **1986**, *83*, 3746.
+* SantaLucia, J. *Proc. Natl. Acad. Sci.* **1998**, *95*, 1460.
