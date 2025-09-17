@@ -377,13 +377,13 @@ window.onload = () => {
 				"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
 				"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
 				"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
-				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[ssDNA] /μM"
+				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[ssDNA] /μM", "Used Values for Tm"
 			].join("\t") + "\n";
 		lastResults.forEach(r => {
 			Object.keys(r).forEach(key => {
 				tsv += r[key] + "\t";
 			});
-			tsv += na + "\t" + dna + "\n";
+			tsv += na + "\t" + dna + "\t" + hsValues + "\n";
 		});
 
 		const blob = new Blob([tsv], { type: "text/tab-separated-values" });
