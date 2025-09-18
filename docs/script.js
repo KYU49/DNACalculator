@@ -14,10 +14,9 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
 */
-
 import { DataBinding } from "./DataBinding.js";
 
-(function(){
+(() => {
     // ViewでaddEventListnerなどを記述した際は、EventDispatcherにcallbackをつけて登録する。クリックイベントなどをトリガーにDispatcherを介して、Controllerが呼び出され、ControllerがModelのメソッドを呼び出し、結果がcallback関数に渡される。
     class EventDispatcher {
         constructor (){
@@ -66,33 +65,208 @@ import { DataBinding } from "./DataBinding.js";
 			dntp: new DataBinding(0),
 			dna: new DataBinding(0.5),
 			hsValues: new DataBinding("breslauer"),
-		}
+		};
 		isCalculated = new DataBinding(false);	// 計算が実行されていれば、TSV出力とClearボタンをアクティブに。
+		results = [];
+		absArr = [];
 
 		loadParams() {
 			const search = new URLSearchParams(window.location.search);
 			this.params.seq.value = search.get("seq") || "";
-			this.params.abs = search.get("abs") || "";
-			this.params.na = search.get("na") || 50;
-			this.params.mg = search.get("mg") || 0;
-			this.params.dntp = search.get("dntp") || 0;
-			this.params.dna = search.get("dna") || 0.5;
-			this.params.hsValues = search.get("hsValues") || "breslauer";
+			this.params.abs.value = search.get("abs") || "";
+			this.params.na.value = search.get("na") || 50;
+			this.params.mg.value = search.get("mg") || 0;
+			this.params.dntp.value = search.get("dntp") || 0;
+			this.params.dna.value = search.get("dna") || 0.5;
+			this.params.hsValues.addValueChangeListener((newValue, _) => {
+				this.dispatchEvent(Model.CONST.HS_VALUE_CHANGED);
+			});
+			this.params.hsValues.value = search.get("hsValues") || "breslauer";
 		}
 
 		// 現在の値を整形して、URLに入れられる形にする。
 		getSearch(){
-			return '?' + Object.keys(this.model.params).map( key => key + "=" + encodeURIComponent(this.model.params[key])).join("&");
+			return '?' + Object.entries(this.params).map( ([k, v]) => k + "=" + encodeURIComponent(v.value)).join("&");
 		}
 
 		// 各値を計算して返す
 		calculateValues(){
+			const sequences = this.params.seq.value.split(/\r?\n/);
+			const absorbances = this.params.abs.value.split(/\r?\n/);
+			this.absArr.forEach(abs =>{
+				abs.unbindElement();	//TODO
+			});
+			absorbances.forEach(abs => {
+				this.absArr.push(parseFloat("0" + abs));	//FIXME バインドする。ただし、以前のバインドを削除する機能をDataBinding.js側に実装が必要
+			});
+			this.dispatchEvent(Model.CONST.CALCULATED);
+			this.results = sequences.map((seq, i) => this.calculateValue(seq, absorbances[i] ?? 0));
+			this.isCalculated.value = true;
 
+			return this.results;
+		}
+		calculateValue(sequence, abs){
+			if (!sequence) {
+				return {};
+			}
+			const seq = sequence.toUpperCase().replace(/[^ACGT]/g, "");
+			const rev = seq.split("").reverse().join("");
+
+			const bases = this.countsBases(seq);
+			const pds = this.countsPd(seq);
+			const basesRev = this.countsBases(rev);
+			const pdsRev = this.countsPd(rev);
+
+			const length = seq.length;
+
+			// 分子量 (Mw)
+			const mwTable = Model.CONST.MW_TABLE;
+			const mw = bases.A * mwTable.A + bases.C * mwTable.C + bases.G * mwTable.G + bases.T * mwTable.T - 62.03;
+			const dsMw = (bases.A + bases.T) * (mwTable.A + mwTable.T) + (bases.C + bases.G) * (mwTable.C + mwTable.G) - 79.2 * 2 + 17.01 * 2;
+
+			// GC含量 (%)
+			const gcContent = length > 0 ? ((bases.G + bases.C) / length * 100).toFixed(2) : 0;
+
+			// Wallace法によるTm (簡易)
+			const tmWallace = 2 * (bases.A + bases.T) + 4 * (bases.G + bases.C);
+
+			const epsilonTable1 = Model.CONST.EPSILON_TABLE_1;
+			const epsilonTable2 = Model.CONST.EPSILON_TABLE_2;
+			const epsilon = this.sumProduct(pds, epsilonTable2) - this.sumProduct(pds, epsilonTable1);
+			const dsEpsilon = (1 - (0.287 * (bases.A + bases.T) + 0.059 * (bases.C + bases.G) ) / length) * ( epsilon + this.sumProduct(pdsRev, epsilonTable2) - this.sumProduct(pdsRev, epsilonTable1) );
+
+			// Nearest Neighbor法によるTm
+			const concNa = Number(this.params.na.value);
+			const concMg = Number(this.params.mg.value);
+			const concDNTP = Number(this.params.dntp.value);
+			const concDNA = Number(this.params.dna.value);
+
+			const hsTable = this.getHSTable();
+			const deltaHTable = hsTable.deltaHTable;
+			const deltaSTable = hsTable.deltaSTable;
+			const initiationS = hsTable.initiationS;
+
+			// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
+			// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
+			// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
+			// 16.2はhttps://doi.org/10.1073/pnas.95.4.1460の∂ΔG/∂ln[Na+] = −0.175 kcal/mol → ∂Tm/∂log[Na+] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)を参照。基本的にはポリマーの16.6がよく使われる。
+			//const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10( (concNa + 120 * Math.sqrt(concMg - concDNTP) ) / 1000);
+			const naMod = concNa + 120 * Math.sqrt(concMg - concDNTP);
+			const tmNearestNeighbor = 1000 * this.sumProduct(pds, deltaHTable) / (initiationS + this.sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(naMod / 1000);
+
+			// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
+			let conc_uM = 0;
+			let dsConc_uM = 0;
+			let conc_nguL = 0;
+			let dsConc_nguL = 0;
+			if (abs) {
+				conc_uM = epsilon > 0 ? (abs / epsilon * 1e6).toFixed(2) : 0;
+				dsConc_uM = dsEpsilon > 0 ? (abs / dsEpsilon * 1e6).toFixed(2) : 0;
+				conc_nguL = (conc_uM * mw / 1000).toFixed(2);
+				dsConc_nguL = (dsConc_uM * dsMw / 1000).toFixed(2);
+			}
+
+			return {
+				sequence: seq,
+				length: seq.length,
+				abs: abs,
+				tmNN: tmNearestNeighbor.toFixed(2),
+				tmWallace: tmWallace,
+				epsilon: epsilon.toFixed(0),
+				conc_uM: conc_uM,
+				conc_nguL: conc_nguL,
+				mw: mw.toFixed(2),
+				dsEpsilon: dsEpsilon.toFixed(0),
+				dsConc_uM: dsConc_uM,
+				dsConc_nguL: dsConc_nguL,
+				dsMw: dsMw.toFixed(2),
+				gc: gcContent,
+				A: bases.A,
+				T: bases.T,
+				C: bases.C,
+				G: bases.G
+			};
+		}
+
+		getHSTable(){
+			return Model.CONST.HS_VALUES[this.params.hsValues.value];
+		}
+
+		countsBases(seq) {
+			return {
+				A: (seq.match(/A/g) || []).length,
+				C: (seq.match(/C/g) || []).length,
+				G: (seq.match(/G/g) || []).length,
+				T: (seq.match(/T/g) || []).length
+			};
+		}
+		countsPd(seq) {
+			const counts = {
+				pdA: (seq.slice(1, -1).match(/A/g) || []).length,
+				pdC: (seq.slice(1, -1).match(/C/g) || []).length,
+				pdG: (seq.slice(1, -1).match(/G/g) || []).length,
+				pdT: (seq.slice(1, -1).match(/T/g) || []).length
+			};
+
+			const bases = ["A", "C", "G", "T"];
+			for (let i = 0; i < bases.length; i++) {
+				for (let j = 0; j < bases.length; j++) {
+					const dinuc = bases[i] + bases[j];
+					// 正規表現でオーバーラップもカウント
+					const regex = new RegExp(`(?=${dinuc})`, "g");
+					const count = (seq.match(regex) || []).length;
+					const key = `d${bases[i]}pd${bases[j]}`; // pApdA 形式のキー
+					counts[key] = count;
+				}
+			}
+			return counts;
+		}
+
+		// 同じキー同士をかけ合わせてその和を出す。
+		sumProduct(obj1, obj2){
+			const keys1 = Object.keys(obj1);
+			const keys2 = Object.keys(obj2);
+			// 少ない方のキーを基準にする
+			const keys = keys1.length < keys2.length ? keys1 : keys2;
+
+			return keys
+				.filter(k => k in obj1 && k in obj2)
+				.reduce((acc, k) => acc + obj1[k] * obj2[k], 0);
+		}
+
+		downloadTSV() {
+			if (!this.results.length) return;
+
+			let tsv = [
+					"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
+					"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
+					"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
+					"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[Mg^2+] /mM", "[dNTPs] /mM", "[Primer] /μM", "Used Values for Tm"
+				].join("\t") + "\n";
+			this.results.forEach(r => {
+				Object.keys(r).forEach(key => {
+					tsv += r[key] + "\t";
+				});
+				tsv += this.params.na.value + "\t" + this.params.mg.value + "\t" + this.params.dntp.value + "\t" + this.params.dna.value + "\t" + this.params.hsValues.value + "\n";
+			});
+
+			const blob = new Blob([tsv], { type: "text/tab-separated-values" });
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement("a");
+			a.href = url;
+			const yymmdd = ((d) => `${String(d.getFullYear()).slice(-2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`)(new Date());
+			a.download = yymmdd + "_dna_results.tsv";
+			a.click();
+
+			URL.revokeObjectURL(url);
 		}
 
         static get CONST() {
             return {
                 VALUE_CHANGED: "VALUE_CHANGED",
+				HS_VALUE_CHANGED: "HS_VALUE_CHANGED",
+				CALCULATED: "CALCULATED",
 				HS_VALUES: {
 					// ΔH /kcal･mol^-1
 					// ΔS /cal･mol^-1･K^-1
@@ -173,6 +347,7 @@ import { DataBinding } from "./DataBinding.js";
                 ON_LOAD: "ON_LOAD",
 				BIND_VIEWS: "BIND_VIEWS",
 				REFLECT_URL: "REFRECT_URL",
+				REFLECT_RESULTS: "REFLECT_RESULTS",
             };
         }
         constructor(model){
@@ -182,14 +357,26 @@ import { DataBinding } from "./DataBinding.js";
         }
 		
 		calculate(){
+			if(this.model.params.seq.value.trim().length == 0){
+				return;
+			}
 			// URLに値を反映
-			this.dispatchEvent(this.CONST.REFLECT_URL, this.model.getSearch());
+			this.dispatchEvent(Controller.CONST.REFLECT_URL, this.model.getSearch());
+			// 実際に値を計算させる
+			const results = this.model.calculateValues();
+			this.dispatchEvent(Controller.CONST.REFLECT_RESULTS, results);
+		}
 
+		clearInput(){
+			if( window.confirm("Clear all your inputs?") ){
+				const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, "");
+				location.href = baseUrl;
+			}
 		}
 
         onload(){
 			this.model.loadParams();	// URLから初期値を変数に代入
-			this.dispatchEvent(Controller.BIND_VIEWS);
+			this.dispatchEvent(Controller.CONST.BIND_VIEWS);
         }
     }
     class View extends EventDispatcher {
@@ -204,9 +391,22 @@ import { DataBinding } from "./DataBinding.js";
             this.controller = controller;
 
 			// eventlistenerの登録
-			document.getElementById("calculateBtn").addEventListener("click", this.controller.moveForCalc);
-			document.getElementById("downloadBtn").addEventListener("click", this.controller.downloadTSV);
-			document.getElementById("clearBtn").addEventListener("click", this.controller.clearInput);
+			document.getElementById("calculateBtn").addEventListener("click", () => {this.controller.calculate()});
+			document.getElementById("downloadBtn").addEventListener("click", () => {this.model.downloadTSV()});
+			document.getElementById("clearBtn").addEventListener("click", () => {this.controller.clearInput()});
+
+			// 長い配列を表示する用のモーダルの設定。
+			modalOverlay.addEventListener("click", e => {
+				if(e.target !== modalBox){
+					modalOverlay.close();
+				}
+			});
+
+
+			this.model.addEventListener(Model.CONST.HS_VALUE_CHANGED, () => {
+				this.controller.calculate();
+				this.drawHSValues();
+			});
 
 			// URLに値を反映する。
 			this.controller.addEventListener(Controller.CONST.REFLECT_URL, (search) => {
@@ -222,7 +422,7 @@ import { DataBinding } from "./DataBinding.js";
 				this.model.params.dntp.bindElement(document.getElementById("dntpInput"));
 				this.model.params.dna.bindElement(document.getElementById("dnaInput"));
 				this.model.params.hsValues.bindElement(
-					new DataBinding.BoundRadio(docuemnt.forms.hsValues.elements["hsValues"])
+					new DataBinding.BoundRadio(document.forms.hsValues.elements["hsValues"])
 				);
 				this.model.isCalculated.bindElement(
 					new DataBinding.BoundEnabled(document.getElementById("downloadBtn"))
@@ -230,8 +430,137 @@ import { DataBinding } from "./DataBinding.js";
 				this.model.isCalculated.bindElement(
 					new DataBinding.BoundEnabled(document.getElementById("clearBtn"))
 				);
+				this.drawHSValues();
+			});
+			this.controller.addEventListener(Controller.CONST.REFLECT_RESULTS, (results) => {
+				this.renderTable(results);
 			});
         }
+		
+		// モーダルダイアログの設定
+		modalOverlay = document.getElementById("modalOverlay");
+		modalBox = document.getElementById("modalBox");
+		showModal(text){
+			this.modalBox.textContent = text;
+			this.modalOverlay.showModal();
+		}
+
+		// ΔH, ΔSの値をページ上に反映
+		drawHSValues(){
+			const hvalues = document.getElementById("hvalues");
+			const hsTable = this.model.getHSTable();
+			while (hvalues.childElementCount > 2) {hvalues.removeChild(hvalues.lastChild);}
+			Object.entries(hsTable.deltaHTable).forEach(([key, value]) => {
+				const td = document.createElement("td");
+				td.textContent = value;
+				hvalues.appendChild(td);
+			});
+			const svalues = document.getElementById("svalues");
+			while (svalues.childElementCount > 2) {svalues.removeChild(svalues.lastChild);}
+			Object.entries(hsTable.deltaSTable).forEach(([key, value]) => {
+				const td = document.createElement("td");
+				td.textContent = value;
+				svalues.appendChild(td);
+			});
+		}
+		
+		renderTable(results) {
+			const resultsContainer = document.getElementById("results");
+			while(resultsContainer.firstChild){
+				resultsContainer.removeChild(resultsContainer.firstChild);
+			}
+			const table = document.createElement("table");
+			const thead = document.createElement("thead");
+			const tbody = document.createElement("tbody");
+			table.appendChild(thead);
+			table.appendChild(tbody);
+			{
+				const tr = document.createElement("tr");
+				thead.appendChild(tr);
+				let counter = 0;
+				[
+					0, 0, 0, {label: "Tm /°C", colspan: 2}, 0, 
+					{label: "ssDNA", colspan: 4}, 0, 0, 0, 
+					{label: "dsDNA", colspan: 4}, 0, 0, 0, 
+					0, {label: "Base Count", colspan: 4}, 0, 0, 0
+				].forEach(l => {
+					if(l) {
+						const th = document.createElement("th");
+						tr.appendChild(th);
+						th.innerHTML = l.label;
+						th.setAttribute("colspan", l.colspan);
+						counter = l.colspan - 1;
+					} else if(counter-- <= 0) {
+						const th = document.createElement("th");
+						tr.appendChild(th);
+					}
+				});
+			}
+			{
+				const tr = document.createElement("tr");
+				thead.appendChild(tr);
+				[
+					"Sequence", "Length", "Abs.", "Nearest Neighbor", "Wallace", 
+					"ε<sub>260 nm</sub> /cm<sup>−1</sup>･M<sup>−1</sup>", "Conc. /μM", "Conc. /ng･μL<sup>−1</sup>", "Mw", 
+					"ε<sub>260 nm</sub> /cm<sup>−1</sup>･M<sup>−1</sup>", "Conc. /μM", "Conc. /ng･μL<sup>−1</sup>", "Mw", 
+					"GC /%", "A", "T", "C", "G"
+				].forEach(l => {
+					const th = document.createElement("th");
+					tr.appendChild(th);
+					th.innerHTML = l;
+				});
+			}
+
+			results.forEach( (r, i) => {
+				const tr = document.createElement("tr");
+				tbody.appendChild(tr);
+				Object.keys(r).forEach(key => {
+					const value = r[key];
+					const td = document.createElement("td");
+					tr.appendChild(td);
+					td.classList.add(key);
+					switch(key){
+						case "abs":
+							const input = document.createElement("input");
+							input.setAttribute("type", "text");
+							input.value = value;
+							const rConst = r;
+							const trConst = tr;
+							const iConst = i;
+							input.addEventListener("input", e => {
+								const absText = e.target.value.replace(/[^\d\.]/g, "").replace(/(\.\d*)\./g, "$1");
+								let abs = parseFloat("0" + absText);
+								lastResults[iConst].abs = abs;
+								const conc = abs / rConst.epsilon * 1000000;
+								trConst.getElementsByClassName("conc_uM")[0].textContent = conc.toFixed(2);
+								lastResults[iConst].conc_uM = conc.toFixed(2);
+								trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(2);
+								lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(2);
+								const dsConc = abs / rConst.dsEpsilon * 1000000;
+								trConst.getElementsByClassName("dsConc_uM")[0].textContent = dsConc.toFixed(2);
+								lastResults[iConst].dsConc_uM = dsConc.toFixed(2);
+								trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(2);
+								lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(2);
+								e.target.value = absText;
+							});
+							input.classList.add("abs-input");
+							td.appendChild(input);
+							break;
+						case "sequence":
+							td.setAttribute("title", value);
+							td.style.cursor = "pointer";
+							td.addEventListener("click", e =>{
+								this.showModal(value);
+							});
+							// breakせずにdefaultの処理まで進める。
+						default:
+							td.textContent = value;
+							break;
+					}
+				});
+			});
+			resultsContainer.appendChild(table);
+		}
     }
     // MVCをまとめるだけ。
     class App {
@@ -246,323 +575,4 @@ import { DataBinding } from "./DataBinding.js";
     window.onload = function () {
         let app = new App();
     };
-})()
-
-
-
-
-
-
-
-
-
-
-
-
-
-window.onload = () => {
-
-	let lastResults = [];
-
-	function clearInput(){
-		if( window.confirm("Clear all your inputs?") ){
-			const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, "");
-			location.href = baseUrl;
-		}
-	}
-
-	let deltaHTable, deltaSTable, initiationS, deltaG;
-	function setHSValues(){
-		
-		const hvalues = document.getElementById("hvalues");
-		while(hvalues.childElementCount > 2){hvalues.removeChild(hvalues.lastChild);}
-		Object.entries(deltaHTable).forEach(([key, value]) => {
-			const td = document.createElement("td");
-			td.textContent = value;
-			hvalues.appendChild(td);
-		});
-		const svalues = document.getElementById("svalues");
-		while(svalues.childElementCount > 2){svalues.removeChild(svalues.lastChild);}
-		Object.entries(deltaSTable).forEach(([key, value]) => {
-			const td = document.createElement("td");
-			td.textContent = value;
-			svalues.appendChild(td);
-		});
-	}
-
-	function calculate() {
-		setHSValues();
-		if(!seq){
-			return;
-		}
-		const sequences = seq.split(/\r?\n/);
-		const absInput = document.getElementById("abs").value;
-		const absorbances = absInput.split(/\r?\n/);
-
-		lastResults = sequences.map((seq, i) => analyzeSequence(seq, absorbances[i] ?? 0));
-
-		renderTable();
-		document.getElementById("downloadBtn").disabled = false;
-	}
-
-	function countsBases(seq) {
-		return {
-			A: (seq.match(/A/g) || []).length,
-			C: (seq.match(/C/g) || []).length,
-			G: (seq.match(/G/g) || []).length,
-			T: (seq.match(/T/g) || []).length
-		};
-	}
-	function countsPd(seq) {
-		const counts = {
-			pdA: (seq.slice(1, -1).match(/A/g) || []).length,
-			pdC: (seq.slice(1, -1).match(/C/g) || []).length,
-			pdG: (seq.slice(1, -1).match(/G/g) || []).length,
-			pdT: (seq.slice(1, -1).match(/T/g) || []).length
-		};
-
-		const bases = ["A", "C", "G", "T"];
-		for (let i = 0; i < bases.length; i++) {
-			for (let j = 0; j < bases.length; j++) {
-				const dinuc = bases[i] + bases[j];
-				// lookahead 正規表現でオーバーラップもカウント
-				const regex = new RegExp(`(?=${dinuc})`, "g");
-				const count = (seq.match(regex) || []).length;
-				const key = `d${bases[i]}pd${bases[j]}`; // pApdA 形式のキー
-				counts[key] = count;
-			}
-		}
-		return counts;
-	}
-
-	// 同じキー同士をかけ合わせてその和を出す。
-	function sumProduct(obj1, obj2){
-		const keys1 = Object.keys(obj1);
-		const keys2 = Object.keys(obj2);
-		// 少ない方のキーを基準にする
-		const keys = keys1.length < keys2.length ? keys1 : keys2;
-
-		return keys
-			.filter(k => k in obj1 && k in obj2)
-			.reduce((acc, k) => acc + obj1[k] * obj2[k], 0);
-	}
-
-	function analyzeSequence(seq, abs) {
-		if (!seq) {
-			return {};
-		}
-		seq = seq.toUpperCase().replace(/[^ACGT]/g, "");
-		rev = seq.split("").reverse().join("");
-
-		const bases = countsBases(seq);
-		const pds = countsPd(seq);
-		const basesRev = countsBases(rev);
-		const pdsRev = countsPd(rev);
-
-		const length = seq.length;
-
-		// 分子量 (Mw)
-		const mw = bases.A * mwTable.A + bases.C * mwTable.C + bases.G * mwTable.G + bases.T * mwTable.T - 62.03;
-		const dsMw = (bases.A + bases.T) * (mwTable.A + mwTable.T) + (bases.C + bases.G) * (mwTable.C + mwTable.G) - 79.2 * 2 + 17.01 * 2;
-
-		// GC含量 (%)
-		const gcContent = length > 0 ? ((bases.G + bases.C) / length * 100).toFixed(2) : 0;
-
-		// Wallace法によるTm (簡易)
-		const tmWallace = 2 * (bases.A + bases.T) + 4 * (bases.G + bases.C);
-
-
-		const epsilon = sumProduct(pds, epsilonTable2) - sumProduct(pds, epsilonTable1);
-		const dsEpsilon = (1 - (0.287 * (bases.A + bases.T) + 0.059 * (bases.C + bases.G) ) / length) * ( epsilon + sumProduct(pdsRev, epsilonTable2) - sumProduct(pdsRev, epsilonTable1) );
-
-		// Nearest Neighbor法によるTm
-		const concNa = Number(document.getElementById("naInput").value);
-		const concMg = Number(document.getElementById("mgInput").value);
-		const concDNTP = Number(document.getElementById("dntpInput").value);
-		const concDNA = Number(document.getElementById("dnaInput").value);
-		// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
-		// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
-		// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
-		// 16.2はhttps://doi.org/10.1073/pnas.95.4.1460の∂ΔG/∂ln[Na+] = −0.175 kcal/mol → ∂Tm/∂log[Na+] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)を参照。基本的にはポリマーの16.6がよく使われる。
-		//const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10( (concNa + 120 * Math.sqrt(concMg - concDNTP) ) / 1000);
-		const naMod = concNa + 120 * Math.sqrt(concMg - concDNTP);
-		const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(naMod / 1000);
-
-		// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
-		let conc_uM = 0;
-		let dsConc_uM = 0;
-		let conc_nguL = 0;
-		let dsConc_nguL = 0;
-		if (abs) {
-			conc_uM = epsilon > 0 ? (abs / epsilon * 1e6).toFixed(2) : 0;
-			dsConc_uM = dsEpsilon > 0 ? (abs / dsEpsilon * 1e6).toFixed(2) : 0;
-			conc_nguL = (conc_uM * mw / 1000).toFixed(2);
-			dsConc_nguL = (dsConc_uM * dsMw / 1000).toFixed(2);
-		}
-
-		return {
-			sequence: seq,
-			length: seq.length,
-			abs: abs,
-			tmNN: tmNearestNeighbor.toFixed(2),
-			tmWallace: tmWallace,
-			epsilon: epsilon.toFixed(0),
-			conc_uM: conc_uM,
-			conc_nguL: conc_nguL,
-			mw: mw.toFixed(2),
-			dsEpsilon: dsEpsilon.toFixed(0),
-			dsConc_uM: dsConc_uM,
-			dsConc_nguL: dsConc_nguL,
-			dsMw: dsMw.toFixed(2),
-			gc: gcContent,
-			A: bases.A,
-			T: bases.T,
-			C: bases.C,
-			G: bases.G
-		};
-	}
-
-	function renderTable() {
-		const results = lastResults;
-		const resultsContainer = document.getElementById("results");
-		while(resultsContainer.firstChild){
-			resultsContainer.removeChild(resultsContainer.firstChild);
-		}
-		const table = document.createElement("table");
-		const thead = document.createElement("thead");
-		const tbody = document.createElement("tbody");
-		table.appendChild(thead);
-		table.appendChild(tbody);
-		{
-			const tr = document.createElement("tr");
-			thead.appendChild(tr);
-			let counter = 0;
-			[
-				0, 0, 0, {label: "Tm /°C", colspan: 2}, 0, 
-				{label: "ssDNA", colspan: 4}, 0, 0, 0, 
-				{label: "dsDNA", colspan: 4}, 0, 0, 0, 
-				0, {label: "Base Count", colspan: 4}, 0, 0, 0
-			].forEach(l => {
-				if(l) {
-					const th = document.createElement("th");
-					tr.appendChild(th);
-					th.innerHTML = l.label;
-					th.setAttribute("colspan", l.colspan);
-					counter = l.colspan - 1;
-				} else if(counter-- <= 0) {
-					const th = document.createElement("th");
-					tr.appendChild(th);
-				}
-			});
-		}
-		{
-			const tr = document.createElement("tr");
-			thead.appendChild(tr);
-			[
-				"Sequence", "Length", "Abs.", "Nearest Neighbor", "Wallace", 
-				"ε<sub>260 nm</sub> /cm<sup>−1</sup>･M<sup>−1</sup>", "Conc. /μM", "Conc. /ng･μL<sup>−1</sup>", "Mw", 
-				"ε<sub>260 nm</sub> /cm<sup>−1</sup>･M<sup>−1</sup>", "Conc. /μM", "Conc. /ng･μL<sup>−1</sup>", "Mw", 
-				"GC /%", "A", "T", "C", "G"
-			].forEach(l => {
-				const th = document.createElement("th");
-				tr.appendChild(th);
-				th.innerHTML = l;
-			});
-		}
-
-		results.forEach( (r, i) => {
-			const tr = document.createElement("tr");
-			tbody.appendChild(tr);
-			Object.keys(r).forEach(key => {
-				const value = r[key];
-				const td = document.createElement("td");
-				tr.appendChild(td);
-				td.classList.add(key);
-				switch(key){
-					case "abs":
-						const input = document.createElement("input");
-						input.setAttribute("type", "text");
-						input.value = value;
-						const rConst = r;
-						const trConst = tr;
-						const iConst = i;
-						input.addEventListener("input", e => {
-							const absText = e.target.value.replace(/[^\d\.]/g, "").replace(/(\.\d*)\./g, "$1");
-							let abs = parseFloat("0" + absText);
-							lastResults[iConst].abs = abs;
-							const conc = abs / rConst.epsilon * 1000000;
-							trConst.getElementsByClassName("conc_uM")[0].textContent = conc.toFixed(2);
-							lastResults[iConst].conc_uM = conc.toFixed(2);
-							trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(2);
-							lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(2);
-							const dsConc = abs / rConst.dsEpsilon * 1000000;
-							trConst.getElementsByClassName("dsConc_uM")[0].textContent = dsConc.toFixed(2);
-							lastResults[iConst].dsConc_uM = dsConc.toFixed(2);
-							trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(2);
-							lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(2);
-							e.target.value = absText;
-						});
-						input.classList.add("abs-input");
-						td.appendChild(input);
-						break;
-					case "sequence":
-						td.setAttribute("title", value);
-						td.style.cursor = "pointer";
-						td.addEventListener("click", e =>{
-							showModal(value);
-						});
-						// breakせずにdefaultの処理まで進める。
-					default:
-						td.textContent = value;
-						break;
-				}
-			});
-		});
-		resultsContainer.appendChild(table);
-	}
-
-	function downloadTSV() {
-		if (!lastResults.length) return;
-		const na = document.getElementById("naInput").value;
-		const dna = document.getElementById("dnaInput").value;
-
-		let tsv = [
-				"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
-				"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
-				"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
-				"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[Mg^2+] /mM", "[dNTPs] /mM", "[Primer] /μM", "Used Values for Tm"
-			].join("\t") + "\n";
-		lastResults.forEach(r => {
-			Object.keys(r).forEach(key => {
-				tsv += r[key] + "\t";
-			});
-			tsv += na + "\t" + mg + "\t" + dntp + "\t" + dna + "\t" + hsValues + "\n";
-		});
-
-		const blob = new Blob([tsv], { type: "text/tab-separated-values" });
-		const url = URL.createObjectURL(blob);
-
-		const a = document.createElement("a");
-		a.href = url;
-		const yymmdd = ((d) => `${String(d.getFullYear()).slice(-2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`)(new Date());
-		a.download = yymmdd + "_dna_results.tsv";
-		a.click();
-
-		URL.revokeObjectURL(url);
-	}
-
-	// モーダルダイアログの設定
-	const modalOverlay = document.getElementById("modalOverlay");
-	const modalBox = document.getElementById("modalBox");
-	function showModal(text){
-		modalBox.textContent = text;
-		modalOverlay.showModal();
-	}
-	modalOverlay.addEventListener("click", e => {
-		if(e.target !== modalBox){
-			modalOverlay.close();
-		}
-	});
-	
-	loadParams();
-};
+})();
