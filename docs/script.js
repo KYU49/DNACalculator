@@ -15,48 +15,255 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
 */
 
+import { DataBinding } from "./DataBinding.js";
+
+(function(){
+    // ViewでaddEventListnerなどを記述した際は、EventDispatcherにcallbackをつけて登録する。クリックイベントなどをトリガーにDispatcherを介して、Controllerが呼び出され、ControllerがModelのメソッドを呼び出し、結果がcallback関数に渡される。
+    class EventDispatcher {
+        constructor (){
+            this.listeners = {};
+            const ADD = "add";
+        }
+        addEventListener(type, callback){
+            if(!this.listeners[type]){
+                this.listeners[type] = [];
+            }
+            this.listeners[type].push(callback);
+        }
+        removeEventListener(type, callback){
+            for(let i = this.listeners[type].length - 1; i >= 0; i--){
+                if(this.listeners[type][i] == callback){
+                    this.listeners[type].splice(i, 1);
+                }
+            }
+        }
+        clearEventListener(){
+            this.listeners = [];
+        }
+        /**
+         *  ディスパッチイベントの実行
+         *  @param {type, [args]} event
+        */
+        dispatchEvent(type, ...args){
+            const tempListeners = this.listeners[type];
+            if(tempListeners){
+                for(let listener in tempListeners){
+                    tempListeners[listener].apply(this.listeners, args);
+                    // applyの参考: https://devsakaso.com/javascript-bind-call-apply-methods/
+                    //              https://ginpen.com/2017/12/17/rest-parameters/
+                }
+            }
+        }
+    }
+
+    // ステートを保存。Controllerからの要求で、外部からのデータ取得。ステートの変更。View, Controllerは見えない。
+    class Model extends EventDispatcher {
+		params = {
+			seq: new DataBinding(""),
+			abs: new DataBinding(""),
+			na: new DataBinding(50),
+			mg: new DataBinding(0),
+			dntp: new DataBinding(0),
+			dna: new DataBinding(0.5),
+			hsValues: new DataBinding("breslauer"),
+		}
+		isCalculated = new DataBinding(false);	// 計算が実行されていれば、TSV出力とClearボタンをアクティブに。
+
+		loadParams() {
+			const search = new URLSearchParams(window.location.search);
+			this.params.seq.value = search.get("seq") || "";
+			this.params.abs = search.get("abs") || "";
+			this.params.na = search.get("na") || 50;
+			this.params.mg = search.get("mg") || 0;
+			this.params.dntp = search.get("dntp") || 0;
+			this.params.dna = search.get("dna") || 0.5;
+			this.params.hsValues = search.get("hsValues") || "breslauer";
+		}
+
+		// 現在の値を整形して、URLに入れられる形にする。
+		getSearch(){
+			return '?' + Object.keys(this.model.params).map( key => key + "=" + encodeURIComponent(this.model.params[key])).join("&");
+		}
+
+		// 各値を計算して返す
+		calculateValues(){
+
+		}
+
+        static get CONST() {
+            return {
+                VALUE_CHANGED: "VALUE_CHANGED",
+				HS_VALUES: {
+					// ΔH /kcal･mol^-1
+					// ΔS /cal･mol^-1･K^-1
+					// 注意: ΔHはkcalだが、ΔSはcal
+					breslauer: {
+						deltaHTable: { 
+							dApdA: -9.1, dApdC: -6.5, dApdG: -7.8, dApdT: -8.6, 
+							dCpdA: -5.8, dCpdC: -11.0, dCpdG: -11.9, dCpdT: -7.8, 
+							dGpdA: -5.6, dGpdC: -11.1, dGpdG: -11.0, dGpdT: -6.5, 
+							dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
+						},
+						deltaSTable: { 
+							dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
+							dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
+							dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
+							dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
+						},
+						initiationS: -10.8,
+						deltaG: 5
+					}, 
+					sugimoto: {
+						deltaHTable: { 
+							dApdA: -8.0, dApdC: -9.4, dApdG: -6.6, dApdT: -5.6, 
+							dCpdA: -8.2, dCpdC: -10.9, dCpdG: -11.8, dCpdT: -6.6, 
+							dGpdA: -8.8, dGpdC: -10.5, dGpdG: -10.9, dGpdT: -9.4, 
+							dTpdA: -6.6, dTpdC: -8.8, dTpdG: -8.2, dTpdT: -8.0 
+						},
+						deltaSTable: { 
+							dApdA: -21.9, dApdC: -25.5, dApdG: -16.4, dApdT: -15.2, 
+							dCpdA: -21.0, dCpdC: -28.4, dCpdG: -29.0, dCpdT: -16.4, 
+							dGpdA: -23.5, dGpdC: -26.4, dGpdG: -28.4, dGpdT: -25.5, 
+							dTpdA: -18.4, dTpdC: -23.5, dTpdG: -21.0, dTpdT: -21.9 
+						},
+						initiationS: -9,
+						deltaG: 3.4,
+					}, 
+					santalucia: {
+						deltaHTable: { 
+							dApdA: -7.9, dApdC: -8.4, dApdG: -7.8, dApdT: -7.2, 
+							dCpdA: -8.5, dCpdC: -8.0, dCpdG: -10.6, dCpdT: -7.8, 
+							dGpdA: -8.2, dGpdC: -9.8, dGpdG: -8.0, dGpdT: -8.4, 
+							dTpdA: -7.2, dTpdC: -8.2, dTpdG: -8.5, dTpdT: -7.9 
+						},
+						deltaSTable: { 
+							dApdA: -22.2, dApdC: -22.4, dApdG: -21.0, dApdT: -20.4, 
+							dCpdA: -22.7, dCpdC: -19.9, dCpdG: -27.2, dCpdT: -21.0, 
+							dGpdA: -22.2, dGpdC: -24.4, dGpdG: -19.9, dGpdT: -22.4, 
+							dTpdA: -21.3, dTpdC: -22.2, dTpdG: -22.7, dTpdT: -22.2 
+						},
+						initiationS: -10.8,
+						deltaG: 5,
+					}
+				},
+				MW_TABLE: { A: 313.21, C: 289.18, G: 329.21, T: 304.2 },
+				
+				// ε260 (モル吸光係数)
+				EPSILON_TABLE_1: { 
+					pdA: 15400, pdC: 7400, pdG: 11500, pdT: 8700
+				},
+				EPSILON_TABLE_2: { 
+					dApdA: 27400, dApdC: 21200, dApdG: 25000, dApdT: 22800, 
+					dCpdA: 21200, dCpdC: 14600, dCpdG: 18000, dCpdT: 15200, 
+					dGpdA: 25200, dGpdC: 17600, dGpdG: 21600, dGpdT: 20000, 
+					dTpdA: 23400, dTpdC: 16200, dTpdG: 19000, dTpdT: 16800 
+				},
+            };
+        }
+        constructor(){
+            super();
+            const self = this;
+        }
+    }
+    
+    // ViewとModelを双方向に繋ぐ。
+    class Controller extends EventDispatcher{
+        static get CONST() {
+            return {
+                ON_LOAD: "ON_LOAD",
+				BIND_VIEWS: "BIND_VIEWS",
+				REFLECT_URL: "REFRECT_URL",
+            };
+        }
+        constructor(model){
+            super();
+            this.model = model;
+            const self = this;
+        }
+		
+		calculate(){
+			// URLに値を反映
+			this.dispatchEvent(this.CONST.REFLECT_URL, this.model.getSearch());
+
+		}
+
+        onload(){
+			this.model.loadParams();	// URLから初期値を変数に代入
+			this.dispatchEvent(Controller.BIND_VIEWS);
+        }
+    }
+    class View extends EventDispatcher {
+        static get CONST() {
+            return {
+            };
+        }
+        constructor(model, controller) {
+            super();
+            const self = this;
+            this.model = model;
+            this.controller = controller;
+
+			// eventlistenerの登録
+			document.getElementById("calculateBtn").addEventListener("click", this.controller.moveForCalc);
+			document.getElementById("downloadBtn").addEventListener("click", this.controller.downloadTSV);
+			document.getElementById("clearBtn").addEventListener("click", this.controller.clearInput);
+
+			// URLに値を反映する。
+			this.controller.addEventListener(Controller.CONST.REFLECT_URL, (search) => {
+				history.replaceState({}, '', search);
+			});
+
+			this.controller.addEventListener(Controller.CONST.BIND_VIEWS, () => {
+				// 全ての入力欄をバインド
+				this.model.params.seq.bindElement(document.getElementById("seq"));
+				this.model.params.abs.bindElement(document.getElementById("abs"));
+				this.model.params.na.bindElement(document.getElementById("naInput"));
+				this.model.params.mg.bindElement(document.getElementById("mgInput"));
+				this.model.params.dntp.bindElement(document.getElementById("dntpInput"));
+				this.model.params.dna.bindElement(document.getElementById("dnaInput"));
+				this.model.params.hsValues.bindElement(
+					new DataBinding.BoundRadio(docuemnt.forms.hsValues.elements["hsValues"])
+				);
+				this.model.isCalculated.bindElement(
+					new DataBinding.BoundEnabled(document.getElementById("downloadBtn"))
+				);
+				this.model.isCalculated.bindElement(
+					new DataBinding.BoundEnabled(document.getElementById("clearBtn"))
+				);
+			});
+        }
+    }
+    // MVCをまとめるだけ。
+    class App {
+        constructor(){
+            const model = new Model();
+            const controller = new Controller(model);
+            const view = new View(model, controller);
+            controller.onload();
+        }
+    }
+    // ロード時にオブジェクトだけ作成
+    window.onload = function () {
+        let app = new App();
+    };
+})()
+
+
+
+
+
+
+
+
+
+
+
+
 
 window.onload = () => {
-	document.getElementById("calculateBtn").addEventListener("click", moveForCalc);
-	document.getElementById("downloadBtn").addEventListener("click", downloadTSV);
-	document.getElementById("clearBtn").addEventListener("click", clearInput);
-	document.forms.hsValues.addEventListener("change", calculate);
 
 	let lastResults = [];
 
-	let seq = "";
-	let hsValues = "";
-
-	function loadParams() {
-		const params = new URLSearchParams(window.location.search);
-		seq = params.get("seq") || "";
-		abs = params.get("abs") || "";
-		na = params.get("na") || 50;
-		mg = params.get("mg") || 0;
-		dntp = params.get("dntp") || 0;
-		dna = params.get("dna") || 0.5;
-		document.getElementById("seq").value = seq;
-		document.getElementById("abs").value = abs;
-		document.getElementById("naInput").value = na;
-		document.getElementById("mgInput").value = mg;
-		document.getElementById("dntpInput").value = dntp;
-		document.getElementById("dnaInput").value = dna;
-		calculate();
-	}
-
-	function moveForCalc(){
-		const seq = document.getElementById("seq").value.trim();
-		if (!seq) return;
-		const abs = Number(document.getElementById("abs").value);
-		const na = Number(document.getElementById("naInput").value);
-		const mg = Number(document.getElementById("mgInput").value);
-		const dntp = Number(document.getElementById("dntpInput").value);
-		const dna = Number(document.getElementById("dnaInput").value);
-		const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, ""); 
-		const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&mg=${mg}&dntp=${dntp}&dna=${dna}`;
-		//const url = `${baseUrl}?seq=${encodeURIComponent(seq)}&abs=${encodeURIComponent(abs)}&na=${na}&dna=${dna}`;
-		location.href = url;
-	}
 	function clearInput(){
 		if( window.confirm("Clear all your inputs?") ){
 			const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]+$/, "");
@@ -66,60 +273,7 @@ window.onload = () => {
 
 	let deltaHTable, deltaSTable, initiationS, deltaG;
 	function setHSValues(){
-		// ΔH /kcal･mol^-1
-		// ΔS /cal･mol^-1･K^-1
-		// 注意: ΔHはkcalだが、ΔSはcal
-		hsValues = document.forms.hsValues.elements["hsValues"].value;
-		switch(hsValues) {
-			case "breslauer":
-				deltaHTable = { 
-					dApdA: -9.1, dApdC: -6.5, dApdG: -7.8, dApdT: -8.6, 
-					dCpdA: -5.8, dCpdC: -11.0, dCpdG: -11.9, dCpdT: -7.8, 
-					dGpdA: -5.6, dGpdC: -11.1, dGpdG: -11.0, dGpdT: -6.5, 
-					dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
-				};
-				deltaSTable = { 
-					dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
-					dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
-					dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
-					dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
-				};
-				initiationS = -10.8;
-				deltaG = 5;
-				break;
-			case "sugimoto":
-				deltaHTable = { 
-					dApdA: -8.0, dApdC: -9.4, dApdG: -6.6, dApdT: -5.6, 
-					dCpdA: -8.2, dCpdC: -10.9, dCpdG: -11.8, dCpdT: -6.6, 
-					dGpdA: -8.8, dGpdC: -10.5, dGpdG: -10.9, dGpdT: -9.4, 
-					dTpdA: -6.6, dTpdC: -8.8, dTpdG: -8.2, dTpdT: -8.0 
-				};
-				deltaSTable = { 
-					dApdA: -21.9, dApdC: -25.5, dApdG: -16.4, dApdT: -15.2, 
-					dCpdA: -21.0, dCpdC: -28.4, dCpdG: -29.0, dCpdT: -16.4, 
-					dGpdA: -23.5, dGpdC: -26.4, dGpdG: -28.4, dGpdT: -25.5, 
-					dTpdA: -18.4, dTpdC: -23.5, dTpdG: -21.0, dTpdT: -21.9 
-				};
-				initiationS = -9;
-				deltaG = 3.4;
-				break;
-			case "santalucia":
-				deltaHTable = { 
-					dApdA: -7.9, dApdC: -8.4, dApdG: -7.8, dApdT: -7.2, 
-					dCpdA: -8.5, dCpdC: -8.0, dCpdG: -10.6, dCpdT: -7.8, 
-					dGpdA: -8.2, dGpdC: -9.8, dGpdG: -8.0, dGpdT: -8.4, 
-					dTpdA: -7.2, dTpdC: -8.2, dTpdG: -8.5, dTpdT: -7.9 
-				};
-				deltaSTable = { 
-					dApdA: -22.2, dApdC: -22.4, dApdG: -21.0, dApdT: -20.4, 
-					dCpdA: -22.7, dCpdC: -19.9, dCpdG: -27.2, dCpdT: -21.0, 
-					dGpdA: -22.2, dGpdC: -24.4, dGpdG: -19.9, dGpdT: -22.4, 
-					dTpdA: -21.3, dTpdC: -22.2, dTpdG: -22.7, dTpdT: -22.2 
-				};
-				initiationS = -10.8;
-				deltaG = 5;
-				break;
-		}
+		
 		const hvalues = document.getElementById("hvalues");
 		while(hvalues.childElementCount > 2){hvalues.removeChild(hvalues.lastChild);}
 		Object.entries(deltaHTable).forEach(([key, value]) => {
@@ -208,7 +362,6 @@ window.onload = () => {
 		const length = seq.length;
 
 		// 分子量 (Mw)
-		const mwTable = { A: 313.21, C: 289.18, G: 329.21, T: 304.2 };
 		const mw = bases.A * mwTable.A + bases.C * mwTable.C + bases.G * mwTable.G + bases.T * mwTable.T - 62.03;
 		const dsMw = (bases.A + bases.T) * (mwTable.A + mwTable.T) + (bases.C + bases.G) * (mwTable.C + mwTable.G) - 79.2 * 2 + 17.01 * 2;
 
@@ -218,16 +371,6 @@ window.onload = () => {
 		// Wallace法によるTm (簡易)
 		const tmWallace = 2 * (bases.A + bases.T) + 4 * (bases.G + bases.C);
 
-		// ε260 (モル吸光係数)
-		const epsilonTable1 = { 
-			pdA: 15400, pdC: 7400, pdG: 11500, pdT: 8700
-		};
-		const epsilonTable2 = { 
-			dApdA: 27400, dApdC: 21200, dApdG: 25000, dApdT: 22800, 
-			dCpdA: 21200, dCpdC: 14600, dCpdG: 18000, dCpdT: 15200, 
-			dGpdA: 25200, dGpdC: 17600, dGpdG: 21600, dGpdT: 20000, 
-			dTpdA: 23400, dTpdC: 16200, dTpdG: 19000, dTpdT: 16800 
-		};
 
 		const epsilon = sumProduct(pds, epsilonTable2) - sumProduct(pds, epsilonTable1);
 		const dsEpsilon = (1 - (0.287 * (bases.A + bases.T) + 0.059 * (bases.C + bases.G) ) / length) * ( epsilon + sumProduct(pdsRev, epsilonTable2) - sumProduct(pdsRev, epsilonTable1) );
