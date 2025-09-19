@@ -93,14 +93,39 @@ import { DataBinding } from "./DataBinding.js";
 		calculateValues(){
 			const sequences = this.params.seq.value.split(/\r?\n/);
 			const absorbances = this.params.abs.value.split(/\r?\n/);
-			this.absArr.forEach(abs =>{
-				abs.unbindElement();	//TODO
+			// 前のViewを破棄してしまうので、値のバインドも削除する。
+			this.absArr.forEach(abs => {
+				abs.unbindElement();
+				abs.removeEventListener();
 			});
-			absorbances.forEach(abs => {
-				this.absArr.push(parseFloat("0" + abs));	//FIXME バインドする。ただし、以前のバインドを削除する機能をDataBinding.js側に実装が必要
-			});
+			this.absArr.splice(0);
+			// 空の行を削除
+			const tempSeq = sequences.slice(0);	// 配列をfor loop用にコピー
+			
+			for(let i = tempSeq.length - 1; i >= 0; i--){
+				// 各行ごとに配列が入っているかチェック
+				const cleaned = tempSeq[i].toUpperCase().replace(/[^ACGT]/g, "");
+				sequences[i] = cleaned;
+				// 配列が入っている行と同じ行のabsを取得するが、absはoptionalのため、同じ行に要素があるか確認しながら取得
+				let cleanedAbs = 0;
+				if(absorbances.length > i){
+					cleanedAbs = absorbances[i].replace(/[^\d\.]/g, "");
+				}
+				// 配列がちゃんと入っているか確認
+				if(cleaned){
+					this.absArr.unshift(new DataBinding(parseFloat("0" + cleanedAbs)));
+				} else {
+					sequences.splice(i, 1);
+					if(absorbances.length > i){
+						absorbances.splice(i, 1);
+					}
+				}
+			}
+			// 空行などを削除、absにも対応した値を入れた状態でtextareaと変数に反映
+			this.params.seq.value = sequences.join("\n");
+			this.params.abs.value = this.absArr.map(v => v.value).join("\n");
 			this.dispatchEvent(Model.CONST.CALCULATED);
-			this.results = sequences.map((seq, i) => this.calculateValue(seq, absorbances[i] ?? 0));
+			this.results = sequences.map((seq, i) => this.calculateValue(seq, this.absArr[i].value));
 			this.isCalculated.value = true;
 
 			return this.results;
@@ -234,6 +259,13 @@ import { DataBinding } from "./DataBinding.js";
 				.reduce((acc, k) => acc + obj1[k] * obj2[k], 0);
 		}
 
+		// absArrの値に基づいて、absorbanceのinputを更新
+		refreshAbsRow(index){
+			this.params.abs.value = this.absArr.map(v => v.value).join("\n");
+			const rowResults = this.calculateValue(this.results[index].seq, this.absArr[index].value);
+
+		}
+
 		downloadTSV() {
 			if (!this.results.length) return;
 
@@ -365,6 +397,20 @@ import { DataBinding } from "./DataBinding.js";
 			// 実際に値を計算させる
 			const results = this.model.calculateValues();
 			this.dispatchEvent(Controller.CONST.REFLECT_RESULTS, results);
+		}
+
+		// 行のabsorbanceが変更されたときに検知、その行だけ再計算するようにDataBindingを設定する。
+		bindResultAbs(input, absElement){
+			absElement.bindElement(input);
+			absElement.addValueChangeListener((newValue, oldValue) => {
+				const newValueFloat = parseFloat("0" + newValue);
+				const oldValueFloat = parseFloat("0" + oldValue);
+				if(newValue != oldValue){
+					this.model.refreshAbsRow(
+						this.model.absArr.indexOf(absElement)
+					);
+				}
+			});
 		}
 
 		clearInput(){
@@ -523,27 +569,8 @@ import { DataBinding } from "./DataBinding.js";
 						case "abs":
 							const input = document.createElement("input");
 							input.setAttribute("type", "text");
-							input.value = value;
-							const rConst = r;
-							const trConst = tr;
-							const iConst = i;
-							input.addEventListener("input", e => {
-								const absText = e.target.value.replace(/[^\d\.]/g, "").replace(/(\.\d*)\./g, "$1");
-								let abs = parseFloat("0" + absText);
-								lastResults[iConst].abs = abs;
-								const conc = abs / rConst.epsilon * 1000000;
-								trConst.getElementsByClassName("conc_uM")[0].textContent = conc.toFixed(2);
-								lastResults[iConst].conc_uM = conc.toFixed(2);
-								trConst.getElementsByClassName("conc_nguL")[0].textContent = (conc * rConst.mw / 1000).toFixed(2);
-								lastResults[iConst].conc_nguL = (conc * rConst.mw / 1000).toFixed(2);
-								const dsConc = abs / rConst.dsEpsilon * 1000000;
-								trConst.getElementsByClassName("dsConc_uM")[0].textContent = dsConc.toFixed(2);
-								lastResults[iConst].dsConc_uM = dsConc.toFixed(2);
-								trConst.getElementsByClassName("dsConc_nguL")[0].textContent = (dsConc * rConst.dsMw / 1000).toFixed(2);
-								lastResults[iConst].dsConc_nguL = (dsConc * rConst.dsMw / 1000).toFixed(2);
-								e.target.value = absText;
-							});
 							input.classList.add("abs-input");
+							this.controller.bindResultAbs(input, this.model.absArr[i]);
 							td.appendChild(input);
 							break;
 						case "sequence":

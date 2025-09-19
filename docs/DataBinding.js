@@ -221,7 +221,7 @@ export class DataBinding{
                     const listener = () => {
                         boundElement.element2value(self, boundElement.element);
                     };
-                    radio.addEventListener("change", listener);
+                    radio.addEventListener(boundElement.eventListenerType, listener);
                     this.#boundListeners.push({element: radio, listener: listener});
                 });
             } else {
@@ -243,9 +243,17 @@ export class DataBinding{
 
     /**
      * 指定したelementまたはBoundElementをunbindする。
-     * @param {DataBinding.BoundElement | Element} targetElement 解除したいelementまたはBoundElement
+     * 引数なし(null)で全解除
+     * @param {?DataBinding.BoundElement | ?Element} targetElement 解除したいelementまたはBoundElement
      */
-    unbindElement(targetElement){
+    unbindElement(targetElement=null){
+        // 無指定で全削除
+        if (targetElement == null){
+            this.#boundElements.forEach((ele) => {
+                this.unbindElement(ele);
+            });
+            return;
+        }
         const isBoundElement = targetElement instanceof DataBinding.BoundElement;
         const boundElement = isBoundElement
             ? targetElement
@@ -278,7 +286,7 @@ export class DataBinding{
     }
 
     /**
-     * 値が変わった時(valueの値が変更された時)に実行する処理を変数に追加する。
+     * 値が変わった時(valueの値が変更された時)に実行する処理を変数に追加する。(newValue, oldValue)が渡される。
      * @param {ValueChangeListener} listener - 新しい値が設定された時に呼び出されるコールバック。
      */
     addValueChangeListener(listener){
@@ -286,10 +294,15 @@ export class DataBinding{
     }
     /**
      * 値が変わった時に実行する処理を削除する。
-     * @param {ValueChangeListener} listener - 解除したいコールバック関数。
-     * `addValueChangeListener` で登録したものと同じ参照である必要があります。
+     * @param {?ValueChangeListener} listener - 解除したいコールバック関数。
+     * `addValueChangeListener` で登録したものと同じ参照である必要があある。
+     * null指定で全削除。
      */
-    removeValueChangeListener(listener){
-        this.#valueChangeListeners.splice(this.#valueChangeListeners.indexOf(listener));
+    removeValueChangeListener(listener=null){
+        if(listener == null){
+            this.#valueChangeListeners.splice(0);
+        } else {
+            this.#valueChangeListeners.splice(this.#valueChangeListeners.indexOf(listener), 1);
+        }
     }
 }
