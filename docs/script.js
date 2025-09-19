@@ -96,7 +96,7 @@ import { DataBinding } from "./DataBinding.js";
 			// 前のViewを破棄してしまうので、値のバインドも削除する。
 			this.absArr.forEach(abs => {
 				abs.unbindElement();
-				abs.removeEventListener();
+				abs.removeValueChangeListener();
 			});
 			this.absArr.splice(0);
 			// 空の行を削除
@@ -262,8 +262,9 @@ import { DataBinding } from "./DataBinding.js";
 		// absArrの値に基づいて、absorbanceのinputを更新
 		refreshAbsRow(index){
 			this.params.abs.value = this.absArr.map(v => v.value).join("\n");
-			const rowResults = this.calculateValue(this.results[index].seq, this.absArr[index].value);
-
+			const rowResults = this.calculateValue(this.results[index].sequence, this.absArr[index].value);
+			this.results[index] = rowResults;
+			this.dispatchEvent(Model.CONST.REFLECT_CONC_RESULTS, index, rowResults);
 		}
 
 		downloadTSV() {
@@ -299,6 +300,7 @@ import { DataBinding } from "./DataBinding.js";
                 VALUE_CHANGED: "VALUE_CHANGED",
 				HS_VALUE_CHANGED: "HS_VALUE_CHANGED",
 				CALCULATED: "CALCULATED",
+				REFLECT_CONC_RESULTS: "REFLECT_CONC_RESULTS",
 				HS_VALUES: {
 					// ΔH /kcal･mol^-1
 					// ΔS /cal･mol^-1･K^-1
@@ -405,7 +407,7 @@ import { DataBinding } from "./DataBinding.js";
 			absElement.addValueChangeListener((newValue, oldValue) => {
 				const newValueFloat = parseFloat("0" + newValue);
 				const oldValueFloat = parseFloat("0" + oldValue);
-				if(newValue != oldValue){
+				if(newValueFloat != oldValueFloat){
 					this.model.refreshAbsRow(
 						this.model.absArr.indexOf(absElement)
 					);
@@ -430,6 +432,9 @@ import { DataBinding } from "./DataBinding.js";
             return {
             };
         }
+
+		concTds = [];	// 各行ごとに、濃度に関連するtdのHTMLElementを保存。{conc_uM: ~, conc_nguL: ~, dsConc_uM: ~, dsConc_nguL: ~}
+
         constructor(model, controller) {
             super();
             const self = this;
@@ -452,6 +457,14 @@ import { DataBinding } from "./DataBinding.js";
 			this.model.addEventListener(Model.CONST.HS_VALUE_CHANGED, () => {
 				this.controller.calculate();
 				this.drawHSValues();
+			});
+
+			// Absが変更になった際に、その行の濃度だけ数値を修正する。
+			this.model.addEventListener(Model.CONST.REFLECT_CONC_RESULTS, (index, results) => {
+				const concTd = this.concTds[index];
+				Object.keys(concTd).forEach(key => {
+					concTd[key].textContent = results[key];
+				});
 			});
 
 			// URLに値を反映する。
@@ -515,6 +528,7 @@ import { DataBinding } from "./DataBinding.js";
 			while(resultsContainer.firstChild){
 				resultsContainer.removeChild(resultsContainer.firstChild);
 			}
+			this.concTds.splice(0);	// 濃度関連のtdのHTMLElementを保持しておく配列をリセット。
 			const table = document.createElement("table");
 			const thead = document.createElement("thead");
 			const tbody = document.createElement("tbody");
@@ -560,6 +574,7 @@ import { DataBinding } from "./DataBinding.js";
 			results.forEach( (r, i) => {
 				const tr = document.createElement("tr");
 				tbody.appendChild(tr);
+				this.concTds.push({conc_uM: null, conc_nguL: null, dsConc_uM: null, dsConc_nguL: null});
 				Object.keys(r).forEach(key => {
 					const value = r[key];
 					const td = document.createElement("td");
@@ -579,7 +594,15 @@ import { DataBinding } from "./DataBinding.js";
 							td.addEventListener("click", e =>{
 								this.showModal(value);
 							});
-							// breakせずにdefaultの処理まで進める。
+							td.textContent = value;
+							break;
+						case "conc_uM":
+						case "conc_nguL":
+						case "dsConc_uM":
+						case "dsConc_nguL":
+							this.concTds.slice(-1)[0][key] = td;
+							td.textContent = value;
+							break;
 						default:
 							td.textContent = value;
 							break;
