@@ -28,6 +28,9 @@ input[type="text"] {
 .hide {
 	display: none;
 }
+.hidden {
+	display: none;
+}
 
 h1 {
 	color: #333;

@@ -29,8 +29,9 @@
 	<label>[Na<sup>+</sup>] /mM: <input type="text" id="naInput" value="50" class="conc-input"></label>
 	<label>[Mg<sup>2+</sup>] /mM: <input type="text" id="mgInput" value="0" class="conc-input"></label>
 	<label>[dNTPs] /mM: <input type="text" id="dntpInput" value="0" class="conc-input"></label>
-	<label>[Primer] /μM<sup>†</sup>: <input type="text" id="dnaInput" value="0.5" class="conc-input"></label><br>
-	<small><sup>†</sup>When [DNA] &lt;&lt; [Primer], input the initial primer concentration. When [DNA] = [Primer], input 1/4 primer concentration.</small>
+	<label>[Primer] /nM<sup>†</sup>: <input type="text" id="dnaInput" value="0.5" class="conc-input"></label>
+	<br>
+	<small><sup>†</sup>When primer and target DNA are in equal concentration, input a quarter of the initial primer concentration. Otherwise input [Primer]<sub>initial</sub> - 1/2[Target DNA]<sub>initial</sub></small>
 	<br><br>
 
 	<div class="input-row">
@@ -63,18 +64,18 @@
 	<table class="auto-width-table">
 		<thead>
 			<tr>
-				<th></th><th>pdA</th><th>pdC</th><th>pdG</th><th>pdT</th><th>dApdA</th><th>dApdC</th><th>dApdG</th><th>dApdT</th><th>dCpdA</th><th>dCpdC</th><th>dCpdG</th><th>dCpdT</th><th>dGpdA</th><th>dGpdC</th><th>dGpdG</th><th>dGpdT</th><th>dTpdA</th><th>dTpdC</th><th>dTpdG</th><th>dTpdT</th>
+				<th></th><th>pdA</th><th>pdC</th><th>pdG</th><th>pdT</th><th>dApdA</th><th>dApdC</th><th>dApdG</th><th>dApdT</th><th>dCpdA</th><th>dCpdC</th><th>dCpdG</th><th>dCpdT</th><th>dGpdA</th><th>dGpdC</th><th>dGpdG</th><th>dGpdT</th><th>dTpdA</th><th>dTpdC</th><th>dTpdG</th><th>dTpdT</th><th>Init. w/ term. G･C</th><th>Init. w/ term. A･T</th><th>Syn</th>
 			</tr>
 		</thead>
 		<tbody>
 			<tr>
-				<td>ε<sub>260,ss</sub></td><td>15400</td><td>7400</td><td>11500</td><td>8700</td><td>27400</td><td>21200</td><td>25000</td><td>22800</td><td>21200</td><td>14600</td><td>18000</td><td>15200</td><td>25200</td><td>17600</td><td>21600</td><td>20000</td><td>23400</td><td>16200</td><td>19000</td><td>16800</td>
+				<td>ε<sub>260,ss</sub></td><td>15400</td><td>7400</td><td>11500</td><td>8700</td><td>27400</td><td>21200</td><td>25000</td><td>22800</td><td>21200</td><td>14600</td><td>18000</td><td>15200</td><td>25200</td><td>17600</td><td>21600</td><td>20000</td><td>23400</td><td>16200</td><td>19000</td><td>16800</td><td></td><td></td><td></td>
 			</tr>
 			<tr id="hvalues">
-				<td>ΔH /kcal･mol<sup>-1</sup></td><td colspan="4"></td>
+				<td>ΔH° /kcal･mol<sup>-1</sup></td><td colspan="4"></td>
 			</tr>
 			<tr id="svalues">
-				<td>ΔS /cal･mol<sup>-1</sup>K<sup>-1</sup></td><td colspan="4"></td>
+				<td>ΔS° /cal･mol<sup>-1</sup>K<sup>-1</sup></td><td colspan="4"></td>
 			</tr>
 		</tbody>
 	</table>
@@ -104,7 +105,8 @@
 	<hr>
 
 	<h2>Formula</h2>
-	
+	<input type="checkbox" id="traditional" /><label for="traditional">Use traditional formula for Tm</label>
+
 	<math display="block"><mrow><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi></mrow></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mi>ɛ</mi><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><mo>−</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>2</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mi>ɛ</mi><mi>i</mi></msub></mrow></mrow></math>
 	<math display="block"><mrow><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi is =true>ds</mi></mrow></msub><mo>=</mo><mo>(</mo><mn>1</mn><mo>-</mo><mi>h</mi><mo>)</mo><mo>(</mo><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi></mrow></msub><mo>+</mo><msub><mi>ɛ</mi><mrow><mn>260</mn><mo>,</mo><mi>ss</mi><mo>(</mo><mi>rev</mi><mo>)</mo></mrow></msub><mo>)</mo></math>
 	<math display="block"><mrow><mi>h</mi><mo>=</mo><mo>(</mo><mn>0.059</mn><mo>&times;</mo><msub><mi>Count</mi><mi>GC</mi></msub><mo>+</mo><mn>0.278</mn><mo>&times;</mo><msub><mi>Count</mi><mi>AT</mi></msub><mo>)</mo><mo>/</mo><mi>Length</mi></mrow></math>
@@ -116,25 +118,63 @@
 	<math><msub><mi>N</mi><mi>b</mi></msub></math>
 	 is the number of nucleotides in the oligomer sequence<sup>[<a href="https://doi.org/10.1016/j.bpc.2007.12.004" target="_blank">4</a>]</sup>.
 
-
-	<math display="block">
+	
+	<math display="block"  display="block" id="formulaTraditional">
 		<msub><mi>T</mi><mi mathvariant="normal">m</mi></msub>
-		<mo>=</mo>		
+		<mo>=</mo>
 		<mrow><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup></mrow>
 		<mo>&divide;</mo>
 		<mrow><mo>(</mo><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>+</mo><mi>R</mi><mspace width=".167em"></mspace><mi>ln</mi><mspace width=".167em"></mspace><msub><mi>C</mi><mi>T</mi></msub><mo>)</mo></mrow>
 		<mo>=</mo>
-		<mrow><mi>1000</mi><mo>&times;</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow>
+		<mrow><mi>1000</mi><mo>&times;</mo>
+		<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow>
 		<mo>&divide;</mo>
 		<mrow><mo>(</mo><mrow>
-			<mi>Initial</mi><mi>S</mi> + <munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><mo>+</mo><mn>1.987</mn><mspace width=".167em"></mspace><mi>ln</mi><mrow><mo>[</mo><mi>Primer</mi><mo>]</mo></mrow>
+			<mi>Initial</mi><mi>S</mi><mo>+</mo>
+			<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow><mo>+</mo><mn>1.987</mn><mspace width=".167em"></mspace><mi>ln</mi><mrow><mo>[</mo><mi>Primer</mi><mo>]</mo></mrow>
 		</mrow><mo>)</mo>
-		<mo>+</mo><mn>16.2</mn><mspace width=".167em"></mspace><msub><mi>log</mi><mn>10</mn></msub><mrow><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo><mo>-</mo><mn>273.15</mn>
+		<mo>+</mo><mn>16.6</mn><mspace width=".167em"></mspace><msub><mi>log</mi><mn>10</mn></msub><mrow><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo><mo>-</mo><mn>273.15</mn>
 		</mrow>
-
-		<!-- const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.6 * Math.log10(concNa / 1000); -->
 	</math>
-	where <i>R</i> is gas constant (= 1.987 kcal/(K･mol)), <i>C</i><sub>T</sub> is primer concentration, Initial <i>S</i> is -10.8 or -9.0 (Sugimot's value), and ∂ΔG/∂ln[Na<sup>+</sup>] = −0.175 kcal/mol → ∂<i>T</i><sub>m</sub>/∂log[Na<sup>+</sup>] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>, <a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.<br>
+	<div id="formulaSantaLucia" class="hidden">
+		<math display="block">
+			<msub><mi>T</mi><mi mathvariant="normal">m</mi></msub>
+			<mo>=</mo>
+			<mrow><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup></mrow>
+			<mo>&divide;</mo>
+			<mrow><mo>(</mo><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>+</mo><mi>R</mi><mspace width=".167em"></mspace><mi>ln</mi><mspace width=".167em"></mspace><msub><mi>C</mi><mi>T</mi></msub><mo>)</mo></mrow>
+			<mo>=</mo>
+			<mrow><mi>1000</mi><mo>&times;</mo>
+			<mo>(</mo>
+				<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow>
+				<mo>+</mo>
+				<mrow><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup><mo>(</mo><mi>Init. w/ term. G･C</mi><mo>)</mo></mrow>
+				<mo>+</mo>
+				<mrow><msup><mrow><mi>&#x394;</mi><mi>H</mi></mrow><mo>&#x2218;</mo></msup><mo>(</mo><mi>Init. w/ term. A･T</mi><mo>)</mo></mrow>
+			<mo>)</mo>
+			<mo>&divide;</mo>
+			<mrow><mo>(</mo><mrow>
+				<mi>Initial</mi><mi>S</mi><mo>+</mo>
+				<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><msub><mi>N</mi><mi>b</mi></msub><mo>−</mo><mn>1</mn></mrow></munderover><mrow><msub><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mrow><mi>i</mi><mo>,</mo><mi>i</mi><mo>+</mo><mn>1</mn></mrow></msub></mrow>
+				<mo>+</mo>
+				<mrow><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>(</mo><mi>Init. w/ term. G･C</mi><mo>)</mo></mrow>
+				<mo>+</mo>
+				<mrow><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>(</mo><mi>Init. w/ term. A･T</mi><mo>)</mo></mrow>
+				<mo>+</mo>
+				<mrow><msup><mrow><mi>&#x394;</mi><mi>S</mi></mrow><mo>&#x2218;</mo></msup><mo>(</mo><mi>Syn</mi><mo>)</mo></mrow>
+				<mo>+</mo>	
+				<mn>0.368</mn>
+				<mo>&times;</mo>
+				<mo>(</mo><mi>Primer lenght</mi><mo>-</mo><mn>1</mn><mo>)</mo>
+				<mo>&times;</mo>
+				<mi>ln</mi><mrow><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo></mrow>
+				<mo>+</mo><mn>1.987</mn><mspace width=".167em"></mspace><mi>ln</mi><mrow><mo>[</mo><mi>Primer</mi><mo>]</mo></mrow>
+			</mrow><mo>)</mo>
+			<mo>-</mo><mn>273.15</mn>
+			</mrow>
+		</math>
+	</div>
+	where <i>R</i> is gas constant (= 1.987 kcal/(K･mol)), <i>C</i><sub>T</sub> is primer concentration, Initial <i>S</i> is -10.8 or -9.0 (Sugimot's value), and ∂<i>T</i><sub>m</sub>/∂log[Na<sup>+</sup>] = 16.6 °C<sup>[<a href="https://doi.org/10.1073/pnas.83.11.3746" target="_blank">1</a>, <a href="https://doi.org/10.1093/nar/24.22.4501" target="_blank">2</a>, <a href="https://doi.org/10.1073/pnas.95.4.1460" target="_blank">3</a>]</sup>.<br>
 	The effects of magnesium ions and dNTPs were represented as an effective sodium ion concentration, calculated according to the following equation<sup>[<a href="http://www.ncbi.nlm.nih.gov/pubmed/11673362" target="_blank">5</a>]</sup>.
 	<math display="block">
 		<mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>(</mo><mi>eq</mi><mo>)</mo><mo>]</mo><mo>=</mo><mo>[</mo><msup><mi>Na</mi><mo>+</mo></msup><mo>]</mo><mo>+</mo><mn>120</mn><mo>&times;</mo><msqrt><mrow><mo>[</mo><msup><mi>Mg</mi><mrow><mn>2</mn><mo>+</mo></mrow></msup><mo>]</mo><mo>-</mo><mo>[</mo><mi>dNTPs</mi><mo>]</mo></mrow></msqrt>

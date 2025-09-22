@@ -63,25 +63,31 @@ import { DataBinding } from "./DataBinding.js";
 			na: new DataBinding(50),
 			mg: new DataBinding(0),
 			dntp: new DataBinding(0),
-			dna: new DataBinding(0.5),
+			dna: new DataBinding(500),
 			hsValues: new DataBinding("breslauer"),
+			isTraditional: new DataBinding(true),
 		};
 		isCalculated = new DataBinding(false);	// 計算が実行されていれば、TSV出力とClearボタンをアクティブに。
 		results = [];
 		absArr = [];
 
 		loadParams() {
-			const search = new URLSearchParams(window.location.search);
-			this.params.seq.value = search.get("seq") || "";
-			this.params.abs.value = search.get("abs") || "";
-			this.params.na.value = search.get("na") || 50;
-			this.params.mg.value = search.get("mg") || 0;
-			this.params.dntp.value = search.get("dntp") || 0;
-			this.params.dna.value = search.get("dna") || 0.5;
+			(new URLSearchParams(window.location.search)).forEach((value, key) => {
+				let v = value;
+				if(v) {
+					if(v === "false"){
+						this.params[key].value = false;
+					} else {
+						this.params[key].value = value;
+					}
+				}
+			});
 			this.params.hsValues.addValueChangeListener((newValue, _) => {
 				this.dispatchEvent(Model.CONST.HS_VALUE_CHANGED);
 			});
-			this.params.hsValues.value = search.get("hsValues") || "breslauer";
+			this.params.isTraditional.addValueChangeListener((newValue, _) => {
+				this.dispatchEvent(Model.CONST.FORMULA_TYPE_CHANGED);
+			});
 		}
 
 		// 現在の値を整形して、URLに入れられる形にする。
@@ -172,12 +178,51 @@ import { DataBinding } from "./DataBinding.js";
 			const initiationS = hsTable.initiationS;
 
 			// 参考: https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
-			// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので省略。https://doi.org/10.1093/nar/24.22.4501
+			// ΔG = 1.32 or 3.4 or 5 kcal/(mol･K) は無視できるほど小さいので、SantaLucia法以外では省略。https://doi.org/10.1093/nar/24.22.4501
 			// -10.8 cal/(mol･K)はΔS initiation; DNA濃度の設定は https://doi.org/10.1073/pnas.95.4.1460 のEq.3を参照
 			// 16.2はhttps://doi.org/10.1073/pnas.95.4.1460の∂ΔG/∂ln[Na+] = −0.175 kcal/mol → ∂Tm/∂log[Na+] = 16.2°C (when a sequence-independent ΔS° of −24.85 e.u. is assumed)を参照。基本的にはポリマーの16.6がよく使われる。
 			//const tmNearestNeighbor = 1000 * sumProduct(pds, deltaHTable) / (initiationS + sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10( (concNa + 120 * Math.sqrt(concMg - concDNTP) ) / 1000);
 			const naMod = concNa + 120 * Math.sqrt(concMg - concDNTP);
-			const tmNearestNeighbor = 1000 * this.sumProduct(pds, deltaHTable) / (initiationS + this.sumProduct(pds, deltaSTable) + 1.987 * Math.log(concDNA / 1000000) ) - 273.15 + 16.2 * Math.log10(naMod / 1000);
+
+			let deltaH = this.sumProduct(pds, deltaHTable);
+			let deltaS = initiationS + this.sumProduct(pds, deltaSTable);
+
+			let tmNearestNeighbor;
+			if (this.params.isTraditional.value){
+				tmNearestNeighbor = 1000 * deltaH / (deltaS + 1.987 * Math.log(concDNA / 1000000000)) - 273.15 + 16.6 * Math.log10(naMod / 1000);
+			} else {
+				if (seq === rev){
+					deltaH += deltaHTable.sym;
+					deltaS += deltaSTable.sym;
+				}
+				switch(seq[0]){
+					case "A":
+					case "T":
+						deltaH += deltaHTable.initTermAT;
+						deltaS += deltaSTable.initTermAT;
+						break;
+					case "C":
+					case "G":
+						deltaH += deltaHTable.initTermGC;
+						deltaS += deltaSTable.initTermGC;
+						break;
+				}
+				switch(seq.slice(-1)[0]){
+					case "A":
+					case "T":
+						deltaH += deltaHTable.initTermAT;
+						deltaS += deltaSTable.initTermAT;
+						break;
+					case "C":
+					case "G":
+						deltaH += deltaHTable.initTermGC;
+						deltaS += deltaSTable.initTermGC;
+						break;
+				}
+				deltaS += 0.368 * (length - 1) * Math.log(naMod / 1000);
+				tmNearestNeighbor = 1000 * deltaH / (deltaS + 1.987 * Math.log(concDNA / 1000000000)) - 273.15;
+			}
+			console.log(`ΔH: ${deltaH.toFixed(2)}, ΔS: ${deltaS.toFixed(2)}`);
 
 			// 濃度（例: 1 Abs = 50 μg/mL dsDNA, 簡易換算）
 			let conc_uM = 0;
@@ -274,13 +319,13 @@ import { DataBinding } from "./DataBinding.js";
 					"Sequence", "Length", "Abs.", "Tm_Nearest Neighbor", "Tm_Wallace", 
 					"ssDNA_ε(260 nm) /cm^−1･M^−1", "ssDNA_Conc. /μM", "ssDNA_Conc. /ng･μL^−1", "ssDNA_Mw", 
 					"dsDNA_ε(260 nm) /cm^−1･M^−1", "dsDNA_Conc. /μM", "dsDNA_Conc. /ng･μL^−1", "dsDNA_Mw", 
-					"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[Mg^2+] /mM", "[dNTPs] /mM", "[Primer] /μM", "Used Values for Tm"
+					"GC /%", "A", "T", "C", "G", "[Na^+] /mM", "[Mg^2+] /mM", "[dNTPs] /mM", "[Primer] /nM", "Used Values for Tm", "Use Traditional Formula"
 				].join("\t") + "\n";
 			this.results.forEach(r => {
 				Object.keys(r).forEach(key => {
 					tsv += r[key] + "\t";
 				});
-				tsv += this.params.na.value + "\t" + this.params.mg.value + "\t" + this.params.dntp.value + "\t" + this.params.dna.value + "\t" + this.params.hsValues.value + "\n";
+				tsv += this.params.na.value + "\t" + this.params.mg.value + "\t" + this.params.dntp.value + "\t" + this.params.dna.value + "\t" + this.params.hsValues.value + "\t" + this.params.isTraditional.value + "\n";
 			});
 
 			const blob = new Blob([tsv], { type: "text/tab-separated-values" });
@@ -299,6 +344,7 @@ import { DataBinding } from "./DataBinding.js";
             return {
                 VALUE_CHANGED: "VALUE_CHANGED",
 				HS_VALUE_CHANGED: "HS_VALUE_CHANGED",
+				FORMULA_TYPE_CHANGED: "FORMULA_TYPE_CHANGED",
 				CALCULATED: "CALCULATED",
 				REFLECT_CONC_RESULTS: "REFLECT_CONC_RESULTS",
 				HS_VALUES: {
@@ -310,48 +356,81 @@ import { DataBinding } from "./DataBinding.js";
 							dApdA: -9.1, dApdC: -6.5, dApdG: -7.8, dApdT: -8.6, 
 							dCpdA: -5.8, dCpdC: -11.0, dCpdG: -11.9, dCpdT: -7.8, 
 							dGpdA: -5.6, dGpdC: -11.1, dGpdG: -11.0, dGpdT: -6.5, 
-							dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1 
+							dTpdA: -6.0, dTpdC: -5.6, dTpdG: -5.8, dTpdT: -9.1, 
+							initTermGC: 0, initTermAT: 0, sym: 0
 						},
 						deltaSTable: { 
 							dApdA: -24.0, dApdC: -17.3, dApdG: -20.8, dApdT: -23.9, 
 							dCpdA: -12.9, dCpdC: -26.6, dCpdG: -27.8, dCpdT: -20.8, 
 							dGpdA: -13.5, dGpdC: -26.7, dGpdG: -26.6, dGpdT: -17.3, 
-							dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0 
+							dTpdA: -16.9, dTpdC: -13.5, dTpdG: -12.9, dTpdT: -24.0, 
+							initTermGC: 0, initTermAT: 0, sym: 0
 						},
 						initiationS: -10.8,
-						deltaG: 5
+						deltaGTable: {
+							dApdA: -1.66, dApdC: -1.13, dApdG: -1.35, dApdT: -1.19, 
+							dCpdA: -1.80, dCpdC: -2.75, dCpdG: -3.28, dCpdT: -1.35, 
+							dGpdA: -1.41, dGpdC: -2.82, dGpdG: -2.75, dGpdT: -1.13, 
+							dTpdA: -0.76, dTpdC: -1.41, dTpdG: -1.80, dTpdT: -1.66, 
+							initTermGC: 2.60, initTermAT: 2.60, sym: 0
+						},
 					}, 
 					sugimoto: {
 						deltaHTable: { 
 							dApdA: -8.0, dApdC: -9.4, dApdG: -6.6, dApdT: -5.6, 
 							dCpdA: -8.2, dCpdC: -10.9, dCpdG: -11.8, dCpdT: -6.6, 
 							dGpdA: -8.8, dGpdC: -10.5, dGpdG: -10.9, dGpdT: -9.4, 
-							dTpdA: -6.6, dTpdC: -8.8, dTpdG: -8.2, dTpdT: -8.0 
+							dTpdA: -6.6, dTpdC: -8.8, dTpdG: -8.2, dTpdT: -8.0, 
+							initTermGC: 0, initTermAT: 0, sym: 0
 						},
 						deltaSTable: { 
 							dApdA: -21.9, dApdC: -25.5, dApdG: -16.4, dApdT: -15.2, 
 							dCpdA: -21.0, dCpdC: -28.4, dCpdG: -29.0, dCpdT: -16.4, 
 							dGpdA: -23.5, dGpdC: -26.4, dGpdG: -28.4, dGpdT: -25.5, 
-							dTpdA: -18.4, dTpdC: -23.5, dTpdG: -21.0, dTpdT: -21.9 
+							dTpdA: -18.4, dTpdC: -23.5, dTpdG: -21.0, dTpdT: -21.9, 
+							initTermGC: 0, initTermAT: 0, sym: 0
 						},
 						initiationS: -9,
-						deltaG: 3.4,
+						deltaGTable: {
+							dApdA: -1.20, dApdC: -1.50, dApdG: -1.50, dApdT: -0.90, 
+							dCpdA: -1.70, dCpdC: -2.10, dCpdG: -2.80, dCpdT: -1.50, 
+							dGpdA: -1.50, dGpdC: -2.30, dGpdG: -2.10, dGpdT: -1.50, 
+							dTpdA: -0.90, dTpdC: -1.50, dTpdG: -1.70, dTpdT: -1.20, 
+							initTermGC: 1.70, initTermAT: 1.70, sym: 0
+						},
 					}, 
 					santalucia: {
 						deltaHTable: { 
 							dApdA: -7.9, dApdC: -8.4, dApdG: -7.8, dApdT: -7.2, 
 							dCpdA: -8.5, dCpdC: -8.0, dCpdG: -10.6, dCpdT: -7.8, 
 							dGpdA: -8.2, dGpdC: -9.8, dGpdG: -8.0, dGpdT: -8.4, 
-							dTpdA: -7.2, dTpdC: -8.2, dTpdG: -8.5, dTpdT: -7.9 
+							dTpdA: -7.2, dTpdC: -8.2, dTpdG: -8.5, dTpdT: -7.9, 
+							initTermGC: 0.1, initTermAT: 2.3, sym: 0
 						},
 						deltaSTable: { 
 							dApdA: -22.2, dApdC: -22.4, dApdG: -21.0, dApdT: -20.4, 
 							dCpdA: -22.7, dCpdC: -19.9, dCpdG: -27.2, dCpdT: -21.0, 
 							dGpdA: -22.2, dGpdC: -24.4, dGpdG: -19.9, dGpdT: -22.4, 
-							dTpdA: -21.3, dTpdC: -22.2, dTpdG: -22.7, dTpdT: -22.2 
+							dTpdA: -21.3, dTpdC: -22.2, dTpdG: -22.7, dTpdT: -22.2, 
+							initTermGC: -2.8, initTermAT: 4.1, sym: -1.4
 						},
 						initiationS: -10.8,
-						deltaG: 5,
+						deltaGTable: {
+							dApdA: -1.00, dApdC: -1.44, dApdG: -1.28, dApdT: -0.88, 
+							dCpdA: -1.45, dCpdC: -1.84, dCpdG: -2.17, dCpdT: -1.28, 
+							dGpdA: -1.30, dGpdC: -2.24, dGpdG: -1.84, dGpdT: -1.44, 
+							dTpdA: -0.58, dTpdC: -1.30, dTpdG: -1.45, dTpdT: -1.00, 
+							initTermGC: 0.98, initTermAT: 1.03, sym: 0.43
+						},
+						/* // 1996年の方。1998年の方を使用するため、コメントアウト。
+						deltaGTable: {
+							dApdA: -1.02, dApdC: -1.43, dApdG: -1.16, dApdT: -0.73, 
+							dCpdA: -1.38, dCpdC: -1.77, dCpdG: -2.09, dCpdT: -1.16, 
+							dGpdA: -1.46, dGpdC: -2.28, dGpdG: -1.77, dGpdT: -1.43, 
+							dTpdA: -0.60, dTpdC: -1.46, dTpdG: -1.38, dTpdT: -1.02, 
+							initTermGC: 0.91, initTermAT: 1.11, sym: 0.43
+						},
+						*/
 					}
 				},
 				MW_TABLE: { A: 313.21, C: 289.18, G: 329.21, T: 304.2 },
@@ -380,6 +459,7 @@ import { DataBinding } from "./DataBinding.js";
             return {
                 ON_LOAD: "ON_LOAD",
 				BIND_VIEWS: "BIND_VIEWS",
+				RENDER_HS_TABLE: "RENDER_HS_TABLE",
 				REFLECT_URL: "REFRECT_URL",
 				REFLECT_RESULTS: "REFLECT_RESULTS",
             };
@@ -423,8 +503,9 @@ import { DataBinding } from "./DataBinding.js";
 		}
 
         onload(){
-			this.model.loadParams();	// URLから初期値を変数に代入
 			this.dispatchEvent(Controller.CONST.BIND_VIEWS);
+			this.model.loadParams();	// URLから初期値を変数に代入
+			this.dispatchEvent(Controller.CONST.RENDER_HS_TABLE);
         }
     }
     class View extends EventDispatcher {
@@ -458,6 +539,9 @@ import { DataBinding } from "./DataBinding.js";
 				this.controller.calculate();
 				this.drawHSValues();
 			});
+			this.model.addEventListener(Model.CONST.FORMULA_TYPE_CHANGED, () => {
+				this.controller.calculate();
+			});
 
 			// Absが変更になった際に、その行の濃度だけ数値を修正する。
 			this.model.addEventListener(Model.CONST.REFLECT_CONC_RESULTS, (index, results) => {
@@ -489,8 +573,20 @@ import { DataBinding } from "./DataBinding.js";
 				this.model.isCalculated.bindElement(
 					new DataBinding.BoundEnabled(document.getElementById("clearBtn"))
 				);
+				this.model.params.isTraditional.bindElement(
+					new DataBinding.BoundCheckbox(document.getElementById("traditional"))
+				);
+				this.model.params.isTraditional.bindElement(
+					new DataBinding.BoundVisible(document.getElementById("formulaTraditional"))
+				);
+				this.model.params.isTraditional.bindElement(
+					new DataBinding.BoundInvisible(document.getElementById("formulaSantaLucia"))
+				);
+			});
+			this.controller.addEventListener(Controller.CONST.RENDER_HS_TABLE, () => {
 				this.drawHSValues();
 			});
+
 			this.controller.addEventListener(Controller.CONST.REFLECT_RESULTS, (results) => {
 				this.renderTable(results);
 			});
