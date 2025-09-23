@@ -221,6 +221,8 @@ import { DataBinding } from "./DataBinding.js";
 				}
 				deltaS += 0.368 * (length - 1) * Math.log(naMod / 1000);
 				tmNearestNeighbor = 1000 * deltaH / (deltaS + 1.987 * Math.log(concDNA / 1000000000)) - 273.15;
+
+				//FIXME 右の式と計算値が合わない。https://arep.med.harvard.edu/kzhang/cgi-bin/myOligoTm.cgi
 			}
 			console.log(`ΔH: ${deltaH.toFixed(2)}, ΔS: ${deltaS.toFixed(2)}`);
 
