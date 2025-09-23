@@ -185,10 +185,11 @@ import { DataBinding } from "./DataBinding.js";
 			const naMod = concNa + 120 * Math.sqrt(concMg - concDNTP);
 
 			let deltaH = this.sumProduct(pds, deltaHTable);
-			let deltaS = initiationS + this.sumProduct(pds, deltaSTable);
+			let deltaS = this.sumProduct(pds, deltaSTable);
 
 			let tmNearestNeighbor;
 			if (this.params.isTraditional.value){
+				deltaS += initiationS;
 				tmNearestNeighbor = 1000 * deltaH / (deltaS + 1.987 * Math.log(concDNA / 1000000000)) - 273.15 + 16.6 * Math.log10(naMod / 1000);
 			} else {
 				if (seq === rev){
