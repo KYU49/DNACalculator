@@ -223,7 +223,9 @@ import { DataBinding } from "./DataBinding.js";
 				deltaS += 0.368 * (length - 1) * Math.log(naMod / 1000);
 				tmNearestNeighbor = 1000 * deltaH / (deltaS + 1.987 * Math.log(concDNA / 1000000000)) - 273.15;
 
-				//FIXME 右の式と計算値が合わない。https://arep.med.harvard.edu/kzhang/cgi-bin/myOligoTm.cgi
+				// 右の式と計算値が合わない(Primer3Plusも同じアルゴリズムのはずのため、自分のほうがあっていると思う)。https://arep.med.harvard.edu/kzhang/cgi-bin/myOligoTm.cgi
+				// 右の式とは、traditional, Sugimoto'sでほぼ合う。 https://www.biosyn.com/gizmo/tools/oligo/oligonucleotide%20properties%20calculator.htm
+				// 右の式とは一致する。 https://www.primer3plus.com/index.html
 			}
 			console.log(`ΔH: ${deltaH.toFixed(2)}, ΔS: ${deltaS.toFixed(2)}`);
 
